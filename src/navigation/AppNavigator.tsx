@@ -1,6 +1,6 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import PlaceholderScreen from '../screens/PlaceholderScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -9,8 +9,8 @@ export default function AppNavigator() {
     <NavigationContainer>
       <Stack.Navigator>
         <Stack.Screen
-          name="Home"
-          component={PlaceholderScreen}
+          name="Profile"
+          component={ProfileScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>
