@@ -78,7 +78,7 @@ The exchange protocol, signing, and transport mechanisms.
   recipient: string            // Receiver's public key
   timestamp: number            // Unix timestamp
   nonce: string                // Session identifier
-  fields: Record<string, any>  // Dynamic key-value pairs
+  fields: Record<string, any>  // Dynamic key-value pairs (includes avatar as base64 if present)
   signature: string            // Cryptographic signature
 }
 ```
@@ -135,6 +135,7 @@ Local SQLite database. All data is stored on device.
 CREATE TABLE profile (
   id TEXT PRIMARY KEY,
   display_name TEXT NOT NULL,
+  avatar_uri TEXT,             -- Local file path to avatar image
   created_at INTEGER NOT NULL
 );
 
@@ -147,12 +148,30 @@ CREATE TABLE profile_fields (
   FOREIGN KEY (profile_id) REFERENCES profile(id)
 );
 
+-- Masks (selective field sharing presets)
+CREATE TABLE masks (
+  id TEXT PRIMARY KEY,
+  profile_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  FOREIGN KEY (profile_id) REFERENCES profile(id)
+);
+
+CREATE TABLE mask_fields (
+  mask_id TEXT NOT NULL,
+  profile_field_id TEXT NOT NULL,
+  PRIMARY KEY (mask_id, profile_field_id),
+  FOREIGN KEY (mask_id) REFERENCES masks(id),
+  FOREIGN KEY (profile_field_id) REFERENCES profile_fields(id)
+);
+
 -- Connections (received cards)
 CREATE TABLE connections (
   id TEXT PRIMARY KEY,
   connected_at INTEGER NOT NULL,
   issuer TEXT NOT NULL,           -- Their public key
   display_name TEXT NOT NULL,
+  avatar_uri TEXT,                -- Local file path to their avatar image
   raw_payload TEXT NOT NULL        -- Store full signed payload for verification
 );
 
@@ -179,6 +198,18 @@ CREATE TABLE annotations (
 **Storage abstraction**
 All database operations are encapsulated in `storage.ts`. The application layer never writes raw SQL.
 
+**Design Principles**
+- Domain-specific functions over generic CRUD for type safety and clarity
+- Singleton database instance managed internally
+- Automatic create-or-update logic (upsert pattern)
+- Migration support for schema evolution
+- Avatar images stored as file paths (not blobs) for performance
+
+**ID Strategy**
+- Profile/Connection IDs: Cryptographic public keys (enables signature verification)
+- All other entities: UUIDs (deterministic, offline-first compatible)
+- No autoincrement (breaks in distributed/offline scenarios)
+
 ---
 
 ## Data Flow
@@ -186,23 +217,31 @@ All database operations are encapsulated in `storage.ts`. The application layer 
 **Profile creation (onboarding)**
 1. User inputs display name and initial fields
 2. App generates keypair, stores private key securely
-3. Profile written to SQLite
-4. User navigates to My Card screen
+3. Profile and fields written to SQLite
+4. Avatar stored in filesystem, URI saved to profile
+5. User navigates to My Card screen
 
 **Connection exchange**
-1. User selects fields to share
-2. App generates signed payload (application layer calls `crypto.ts`)
-3. `exchange.ts` encodes payload for NFC/QR transport
-4. Exchange flow coordinates with other device
-5. Received payload is verified (`crypto.ts`)
-6. Connection stored in SQLite (`storage.ts`)
-7. UI updates to show new connection
+1. User selects fields to share (and optionally avatar)
+2. If avatar selected, encode to base64 and include in fields
+3. App generates signed payload (application layer calls `crypto.ts`)
+4. `exchange.ts` encodes payload for NFC/QR transport
+5. Exchange flow coordinates with other device
+6. Received payload is verified (`crypto.ts`)
+7. If payload contains avatar, decode base64 and save to filesystem
+8. Connection stored in SQLite with avatar file path (`storage.ts`)
+9. UI updates to show new connection
 
 **Annotation**
 1. User views connection detail
 2. User adds annotation (e.g., "Works at Acme Corp")
 3. Annotation saved to SQLite, linked to connection
 4. UI reflects updated graph
+
+**Data Persistence**
+- Components load from storage on mount, write on change
+- Database initialized once at app startup
+- All data persists across app restarts
 
 ---
 

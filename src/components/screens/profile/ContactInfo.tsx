@@ -1,24 +1,58 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import KVBContainer, { KeyValuePair } from '../../common/KVBContainer';
+import { getProfileFields, upsertProfileField, deleteProfileField } from '@/services/storage';
+
+// TODO: Replace with actual profile ID from wallet/auth
+const PROFILE_ID = "temp-profile-id";
 
 export default function ContactInfo() {
-  const [fields, setFields] = useState<KeyValuePair[]>([
-    { id: '1', key: 'Name', value: '' },
-    { id: '2', key: 'Phone', value: '' },
-    { id: '3', key: 'Email', value: '' },
-  ]);
+  const [fields, setFields] = useState<KeyValuePair[]>([]);
 
-  const handleUpdate = (id: string, key: string, value: string) => {
+  // Load profile fields on mount
+  useEffect(() => {
+    const loadFields = async () => {
+      try {
+        const profileFields = await getProfileFields(PROFILE_ID);
+        const mappedFields = profileFields.map(field => ({
+          id: field.id,
+          key: field.label,
+          value: field.value,
+        }));
+        setFields(mappedFields);
+      } catch (error) {
+        console.error("Failed to load profile fields:", error);
+      }
+    };
+    loadFields();
+  }, []);
+
+  const handleUpdate = async (id: string, key: string, value: string) => {
+    // Update local state
     setFields((prev) =>
       prev.map((field) =>
         field.id === id ? { ...field, key, value } : field
       )
     );
+
+    // Save to storage
+    try {
+      await upsertProfileField(id, PROFILE_ID, key, value, true);
+    } catch (error) {
+      console.error("Failed to update profile field:", error);
+    }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
+    // Update local state
     setFields((prev) => prev.filter((field) => field.id !== id));
+
+    // Delete from storage
+    try {
+      await deleteProfileField(id);
+    } catch (error) {
+      console.error("Failed to delete profile field:", error);
+    }
   };
 
   const handleAdd = () => {
@@ -27,6 +61,7 @@ export default function ContactInfo() {
       ...prev,
       { id: newId, key: '', value: '' },
     ]);
+    // Note: Field will be saved when user types (via handleUpdate)
   };
 
   return (
