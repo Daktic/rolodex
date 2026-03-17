@@ -147,6 +147,23 @@ CREATE TABLE profile_fields (
   FOREIGN KEY (profile_id) REFERENCES profile(id)
 );
 
+-- Masks (selective field sharing presets)
+CREATE TABLE masks (
+  id TEXT PRIMARY KEY,
+  profile_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  FOREIGN KEY (profile_id) REFERENCES profile(id)
+);
+
+CREATE TABLE mask_fields (
+  mask_id TEXT NOT NULL,
+  profile_field_id TEXT NOT NULL,
+  PRIMARY KEY (mask_id, profile_field_id),
+  FOREIGN KEY (mask_id) REFERENCES masks(id),
+  FOREIGN KEY (profile_field_id) REFERENCES profile_fields(id)
+);
+
 -- Connections (received cards)
 CREATE TABLE connections (
   id TEXT PRIMARY KEY,
