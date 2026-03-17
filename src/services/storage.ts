@@ -20,7 +20,27 @@ const creationStatements: Record<string, string> = {
       FOREIGN KEY (profile_id) REFERENCES profile(id)
     )
   `,
-  
+
+  masks: `
+    CREATE TABLE IF NOT EXISTS masks (
+      id TEXT PRIMARY KEY,
+      profile_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      FOREIGN KEY (profile_id) REFERENCES profile(id)
+    )
+  `,
+
+  maskFields: `
+    CREATE TABLE IF NOT EXISTS mask_fields (
+      mask_id TEXT NOT NULL,
+      profile_field_id TEXT NOT NULL,
+      PRIMARY KEY (mask_id, profile_field_id),
+      FOREIGN KEY (mask_id) REFERENCES masks(id),
+      FOREIGN KEY (profile_field_id) REFERENCES profile_fields(id)
+    )
+  `,
+
   connections: `
     CREATE TABLE IF NOT EXISTS connections (
       id TEXT PRIMARY KEY,
@@ -30,7 +50,7 @@ const creationStatements: Record<string, string> = {
       raw_payload TEXT NOT NULL
     )
   `,
-  
+
   connectionFields: `
     CREATE TABLE IF NOT EXISTS connection_fields (
       id TEXT PRIMARY KEY,
@@ -55,13 +75,17 @@ const creationStatements: Record<string, string> = {
 };
 
 async function initDatabase() {
-  const db = await SQLite.openDatabaseAsync('rolodex.db');
-  
+  const db = await SQLite.openDatabaseAsync("rolodex.db");
+
   for (const statement of Object.values(creationStatements)) {
-    await db.execAsync(statement);
+    try {
+      await db.execAsync(statement);
+    } catch (e) {
+      console.error("Error creating table:", e);
+    }
   }
-  
+
   return db;
 }
 
-export {initDatabase};
+export { initDatabase };
