@@ -1,11 +1,14 @@
 import * as SQLite from "expo-sqlite";
+import type { Profile, ProfileField, Mask, Connection, ConnectionField, Annotation } from "@/types/storage";
 
+let dbInstance: SQLite.SQLiteDatabase | null = null;
 
 const creationStatements: Record<string, string> = {
   profile: `
     CREATE TABLE IF NOT EXISTS profile (
       id TEXT PRIMARY KEY,
       display_name TEXT NOT NULL,
+      avatar_uri TEXT,
       created_at INTEGER NOT NULL
     )
   `,
@@ -47,6 +50,7 @@ const creationStatements: Record<string, string> = {
       connected_at INTEGER NOT NULL,
       issuer TEXT NOT NULL,
       display_name TEXT NOT NULL,
+      avatar_uri TEXT,
       raw_payload TEXT NOT NULL
     )
   `,
@@ -75,8 +79,11 @@ const creationStatements: Record<string, string> = {
 };
 
 async function initDatabase() {
+  if (dbInstance) return dbInstance;
+
   const db = await SQLite.openDatabaseAsync("rolodex.db");
 
+  // Create tables
   for (const statement of Object.values(creationStatements)) {
     try {
       await db.execAsync(statement);
@@ -85,7 +92,39 @@ async function initDatabase() {
     }
   }
 
+  // Run migrations
+  await runMigrations(db);
+
+  dbInstance = db;
   return db;
+}
+
+async function runMigrations(db: SQLite.SQLiteDatabase) {
+  // Add avatar_uri column if it doesn't exist
+  try {
+    await db.execAsync(`
+      ALTER TABLE profile ADD COLUMN avatar_uri TEXT;
+    `);
+    console.log("Migration: Added avatar_uri to profile");
+  } catch (e) {
+    // Column already exists, ignore
+  }
+
+  try {
+    await db.execAsync(`
+      ALTER TABLE connections ADD COLUMN avatar_uri TEXT;
+    `);
+    console.log("Migration: Added avatar_uri to connections");
+  } catch (e) {
+    // Column already exists, ignore
+  }
+}
+
+function getDatabase(): SQLite.SQLiteDatabase {
+  if (!dbInstance) {
+    throw new Error("Database not initialized. Call initDatabase() first.");
+  }
+  return dbInstance;
 }
 
 // ============================================================================
@@ -93,28 +132,69 @@ async function initDatabase() {
 // ============================================================================
 
 async function upsertProfile(
-  db: SQLite.SQLiteDatabase,
   id: string,
   displayName: string,
+  avatarUri?: string | null,
   createdAt?: number
 ): Promise<void> {
+  const db = getDatabase();
   const timestamp = createdAt || Date.now();
   await db.runAsync(
-    `INSERT INTO profile (id, display_name, created_at)
-     VALUES (?, ?, ?)
-     ON CONFLICT(id) DO UPDATE SET display_name = excluded.display_name`,
-    [id, displayName, timestamp]
+    `INSERT INTO profile (id, display_name, avatar_uri, created_at)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET
+      display_name = excluded.display_name,
+       avatar_uri = excluded.avatar_uri`,
+    [id, displayName, avatarUri?? null, timestamp]
   );
 }
 
-async function getProfile(db: SQLite.SQLiteDatabase, id: string) {
-  return await db.getFirstAsync(
+async function updateProfileAvatar(id: string, avatarUri: string | null): Promise<void> {
+  const db = getDatabase();
+
+  // Check if profile exists
+  const existing = await getProfile(id);
+
+  if (existing) {
+    // Update existing
+    await db.runAsync(
+      "UPDATE profile SET avatar_uri = ? WHERE id = ?",
+      [avatarUri, id]
+    );
+  } else {
+    // Create new profile with placeholder name
+    await upsertProfile(id, "User", avatarUri);
+  }
+}
+
+async function updateProfileDisplayName(id: string, profileName: string): Promise<void> {
+  const db = getDatabase();
+
+  // Check if profile exists
+  const existing = await getProfile(id);
+
+  if (existing) {
+    // Update existing
+    await db.runAsync(
+      "UPDATE profile SET display_name = ? WHERE id = ?",
+      [profileName, id]
+    );
+  } else {
+    // Create new profile
+    await upsertProfile(id, profileName);
+  }
+}
+
+async function getProfile(id: string): Promise<Profile | null> {
+  const db = getDatabase();
+  return await db.getFirstAsync<Profile>(
     "SELECT * FROM profile WHERE id = ?",
     [id]
   );
 }
 
-async function deleteProfile(db: SQLite.SQLiteDatabase, id: string): Promise<void> {
+async function deleteProfile(id: string): Promise<void> {
+  const db = getDatabase();
   await db.runAsync("DELETE FROM profile WHERE id = ?", [id]);
 }
 
@@ -123,13 +203,13 @@ async function deleteProfile(db: SQLite.SQLiteDatabase, id: string): Promise<voi
 // ============================================================================
 
 async function upsertProfileField(
-  db: SQLite.SQLiteDatabase,
   id: string,
   profileId: string,
   label: string,
   value: string,
   shareByDefault: boolean
 ): Promise<void> {
+  const db = getDatabase();
   await db.runAsync(
     `INSERT INTO profile_fields (id, profile_id, label, value, share_by_default)
      VALUES (?, ?, ?, ?, ?)
@@ -141,14 +221,16 @@ async function upsertProfileField(
   );
 }
 
-async function getProfileFields(db: SQLite.SQLiteDatabase, profileId: string) {
-  return await db.getAllAsync(
+async function getProfileFields(profileId: string): Promise<ProfileField[]> {
+  const db = getDatabase();
+  return await db.getAllAsync<ProfileField>(
     "SELECT * FROM profile_fields WHERE profile_id = ?",
     [profileId]
   );
 }
 
-async function deleteProfileField(db: SQLite.SQLiteDatabase, id: string): Promise<void> {
+async function deleteProfileField(id: string): Promise<void> {
+  const db = getDatabase();
   await db.runAsync("DELETE FROM profile_fields WHERE id = ?", [id]);
 }
 
@@ -157,12 +239,12 @@ async function deleteProfileField(db: SQLite.SQLiteDatabase, id: string): Promis
 // ============================================================================
 
 async function upsertMask(
-  db: SQLite.SQLiteDatabase,
   id: string,
   profileId: string,
   name: string,
   createdAt?: number
 ): Promise<void> {
+  const db = getDatabase();
   const timestamp = createdAt || Date.now();
   await db.runAsync(
     `INSERT INTO masks (id, profile_id, name, created_at)
@@ -172,14 +254,16 @@ async function upsertMask(
   );
 }
 
-async function getMasks(db: SQLite.SQLiteDatabase, profileId: string) {
-  return await db.getAllAsync(
+async function getMasks(profileId: string): Promise<Mask[]> {
+  const db = getDatabase();
+  return await db.getAllAsync<Mask>(
     "SELECT * FROM masks WHERE profile_id = ?",
     [profileId]
   );
 }
 
-async function deleteMask(db: SQLite.SQLiteDatabase, id: string): Promise<void> {
+async function deleteMask(id: string): Promise<void> {
+  const db = getDatabase();
   await db.runAsync("DELETE FROM masks WHERE id = ?", [id]);
 }
 
@@ -188,10 +272,10 @@ async function deleteMask(db: SQLite.SQLiteDatabase, id: string): Promise<void> 
 // ============================================================================
 
 async function setMaskFields(
-  db: SQLite.SQLiteDatabase,
   maskId: string,
   profileFieldIds: string[]
 ): Promise<void> {
+  const db = getDatabase();
   // Delete existing associations
   await db.runAsync("DELETE FROM mask_fields WHERE mask_id = ?", [maskId]);
 
@@ -204,8 +288,9 @@ async function setMaskFields(
   }
 }
 
-async function getMaskFields(db: SQLite.SQLiteDatabase, maskId: string) {
-  return await db.getAllAsync(
+async function getMaskFields(maskId: string): Promise<ProfileField[]> {
+  const db = getDatabase();
+  return await db.getAllAsync<ProfileField>(
     `SELECT pf.* FROM profile_fields pf
      JOIN mask_fields mf ON pf.id = mf.profile_field_id
      WHERE mf.mask_id = ?`,
@@ -218,36 +303,41 @@ async function getMaskFields(db: SQLite.SQLiteDatabase, maskId: string) {
 // ============================================================================
 
 async function upsertConnection(
-  db: SQLite.SQLiteDatabase,
   id: string,
   issuer: string,
   displayName: string,
   rawPayload: string,
+  avatarUri?: string | null,
   connectedAt?: number
 ): Promise<void> {
+  const db = getDatabase();
   const timestamp = connectedAt || Date.now();
   await db.runAsync(
-    `INSERT INTO connections (id, connected_at, issuer, display_name, raw_payload)
-     VALUES (?, ?, ?, ?, ?)
+    `INSERT INTO connections (id, connected_at, issuer, display_name, avatar_uri, raw_payload)
+     VALUES (?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
        display_name = excluded.display_name,
+       avatar_uri = excluded.avatar_uri,
        raw_payload = excluded.raw_payload`,
-    [id, timestamp, issuer, displayName, rawPayload]
+    [id, timestamp, issuer, displayName, avatarUri?? null, rawPayload]
   );
 }
 
-async function getConnection(db: SQLite.SQLiteDatabase, id: string) {
-  return await db.getFirstAsync(
+async function getConnection(id: string): Promise<Connection | null> {
+  const db = getDatabase();
+  return await db.getFirstAsync<Connection>(
     "SELECT * FROM connections WHERE id = ?",
     [id]
   );
 }
 
-async function getAllConnections(db: SQLite.SQLiteDatabase) {
-  return await db.getAllAsync("SELECT * FROM connections ORDER BY connected_at DESC");
+async function getAllConnections(): Promise<Connection[]> {
+  const db = getDatabase();
+  return await db.getAllAsync<Connection>("SELECT * FROM connections ORDER BY connected_at DESC");
 }
 
-async function deleteConnection(db: SQLite.SQLiteDatabase, id: string): Promise<void> {
+async function deleteConnection(id: string): Promise<void> {
+  const db = getDatabase();
   await db.runAsync("DELETE FROM connections WHERE id = ?", [id]);
 }
 
@@ -256,12 +346,12 @@ async function deleteConnection(db: SQLite.SQLiteDatabase, id: string): Promise<
 // ============================================================================
 
 async function upsertConnectionField(
-  db: SQLite.SQLiteDatabase,
   id: string,
   connectionId: string,
   label: string,
   value: string
 ): Promise<void> {
+  const db = getDatabase();
   await db.runAsync(
     `INSERT INTO connection_fields (id, connection_id, label, value)
      VALUES (?, ?, ?, ?)
@@ -272,14 +362,16 @@ async function upsertConnectionField(
   );
 }
 
-async function getConnectionFields(db: SQLite.SQLiteDatabase, connectionId: string) {
-  return await db.getAllAsync(
+async function getConnectionFields(connectionId: string): Promise<ConnectionField[]> {
+  const db = getDatabase();
+  return await db.getAllAsync<ConnectionField>(
     "SELECT * FROM connection_fields WHERE connection_id = ?",
     [connectionId]
   );
 }
 
-async function deleteConnectionField(db: SQLite.SQLiteDatabase, id: string): Promise<void> {
+async function deleteConnectionField(id: string): Promise<void> {
+  const db = getDatabase();
   await db.runAsync("DELETE FROM connection_fields WHERE id = ?", [id]);
 }
 
@@ -288,7 +380,6 @@ async function deleteConnectionField(db: SQLite.SQLiteDatabase, id: string): Pro
 // ============================================================================
 
 async function upsertAnnotation(
-  db: SQLite.SQLiteDatabase,
   id: string,
   connectionId: string,
   type: string,
@@ -296,6 +387,7 @@ async function upsertAnnotation(
   value: string,
   createdAt?: number
 ): Promise<void> {
+  const db = getDatabase();
   const timestamp = createdAt || Date.now();
   await db.runAsync(
     `INSERT INTO annotations (id, connection_id, type, label, value, created_at)
@@ -308,21 +400,26 @@ async function upsertAnnotation(
   );
 }
 
-async function getAnnotations(db: SQLite.SQLiteDatabase, connectionId: string) {
-  return await db.getAllAsync(
+async function getAnnotations(connectionId: string): Promise<Annotation[]> {
+  const db = getDatabase();
+  return await db.getAllAsync<Annotation>(
     "SELECT * FROM annotations WHERE connection_id = ? ORDER BY created_at DESC",
     [connectionId]
   );
 }
 
-async function deleteAnnotation(db: SQLite.SQLiteDatabase, id: string): Promise<void> {
+async function deleteAnnotation(id: string): Promise<void> {
+  const db = getDatabase();
   await db.runAsync("DELETE FROM annotations WHERE id = ?", [id]);
 }
 
 export {
   initDatabase,
+  getDatabase,
   // Profile
   upsertProfile,
+  updateProfileAvatar,
+  updateProfileDisplayName,
   getProfile,
   deleteProfile,
   // Profile Fields

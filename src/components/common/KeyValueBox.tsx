@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TextInput, Pressable, Alert, Animated } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 
@@ -25,6 +25,15 @@ export default function KeyValueBox({
 }: KeyValueBoxProps) {
   const [key, setKey] = useState(initialKey);
   const [value, setValue] = useState(initialValue);
+
+  // Update local state when props change
+  useEffect(() => {
+    setKey(initialKey);
+  }, [initialKey]);
+
+  useEffect(() => {
+    setValue(initialValue);
+  }, [initialValue]);
 
   const handleKeyChange = (newKey: string) => {
     setKey(newKey);

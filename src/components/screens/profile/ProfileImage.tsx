@@ -1,9 +1,37 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { updateProfileAvatar, getProfile } from '@/services/storage';
+
+// TODO: Replace with actual profile ID from wallet/auth
+const PROFILE_ID = "temp-profile-id";
+
+const updateProfileImage = async (imageUri: string) => {
+  await updateProfileAvatar(PROFILE_ID, imageUri);
+};
 
 export default function ProfileImage() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
+
+  // Load profile image on mount
+  useEffect(() => {
+    const loadProfileImage = async () => {
+      try {
+        console.log("Loading profile image for ID:", PROFILE_ID);
+        const profile = await getProfile(PROFILE_ID);
+        console.log("Profile loaded:", profile);
+        if (profile?.avatar_uri) {
+          console.log("Setting profile image to:", profile.avatar_uri);
+          setProfileImage(profile.avatar_uri);
+        } else {
+          console.log("No avatar_uri found in profile");
+        }
+      } catch (error) {
+        console.error("Failed to load profile image:", error);
+      }
+    };
+    loadProfileImage();
+  }, []);
 
   const pickImage = async () => {
     // Request permission
@@ -22,7 +50,12 @@ export default function ProfileImage() {
     });
 
     if (!result.canceled) {
-      setProfileImage(result.assets[0].uri);
+      const pic = result.assets[0].uri
+      console.log("Image picked:", pic);
+      setProfileImage(pic);
+      console.log("Saving image to storage...");
+      await updateProfileImage(pic);
+      console.log("Image saved to storage");
     }
   };
 
