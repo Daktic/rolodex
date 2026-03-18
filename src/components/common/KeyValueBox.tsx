@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, TextInput, Pressable, Alert, Animated } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 
@@ -25,6 +25,8 @@ export default function KeyValueBox({
 }: KeyValueBoxProps) {
   const [key, setKey] = useState(initialKey);
   const [value, setValue] = useState(initialValue);
+  const [isBlurred, setIsBlurred] = useState(false);
+  const swipeableRef = useRef<Swipeable>(null);
 
   // Update local state when props change
   useEffect(() => {
@@ -46,6 +48,10 @@ export default function KeyValueBox({
   };
 
   const handleDelete = () => {
+    if (isBlurred) {
+      // Don't allow deletion of blurred fields
+      return;
+    }
     Alert.alert(
       'Delete Field',
       `Are you sure you want to delete "${key || 'this field'}"?`,
@@ -58,6 +64,20 @@ export default function KeyValueBox({
         },
       ]
     );
+  };
+
+  const handleSwipeRight = () => {
+    setIsBlurred(!isBlurred);
+    // Close the swipeable to bounce back
+    swipeableRef.current?.close();
+  };
+
+  const renderLeftActions = (
+    progress: Animated.AnimatedInterpolation<number>,
+    dragX: Animated.AnimatedInterpolation<number>
+  ) => {
+    // Invisible action area that triggers mask/unmask
+    return <View style={{ width: 80 }} />;
   };
 
   const renderRightActions = (
@@ -77,7 +97,10 @@ export default function KeyValueBox({
           { transform: [{ translateX: trans }] },
         ]}
       >
-        <Pressable style={styles.deleteButton} onPress={handleDelete}>
+        <Pressable
+          style={[styles.deleteButton, isBlurred && styles.deleteButtonDisabled]}
+          onPress={handleDelete}
+        >
           <Text style={styles.deleteText}>Delete</Text>
         </Pressable>
       </Animated.View>
@@ -86,8 +109,16 @@ export default function KeyValueBox({
 
   return (
     <Swipeable
+      ref={swipeableRef}
+      renderLeftActions={renderLeftActions}
       renderRightActions={onDelete ? renderRightActions : undefined}
+      overshootLeft={false}
       overshootRight={false}
+      onSwipeableOpen={(direction) => {
+        if (direction === 'left') {
+          handleSwipeRight();
+        }
+      }}
     >
       <Pressable
         style={styles.container}
@@ -108,8 +139,10 @@ export default function KeyValueBox({
           )}
         </View>
 
-        <View style={styles.valueContainer}>
-          {valueEditable ? (
+        <View style={[styles.valueContainer, isBlurred && styles.blurredValue]}>
+          {isBlurred ? (
+            <Text style={styles.maskedText}>Masked</Text>
+          ) : valueEditable ? (
             <TextInput
               style={styles.valueInput}
               value={value}
@@ -118,7 +151,9 @@ export default function KeyValueBox({
               placeholderTextColor="#999"
             />
           ) : (
-            <Text style={styles.valueText}>{value || 'Value'}</Text>
+            <Text style={styles.valueText}>
+              {value || 'Value'}
+            </Text>
           )}
         </View>
       </Pressable>
@@ -184,5 +219,22 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 14,
+  },
+  deleteButtonDisabled: {
+    backgroundColor: '#ccc',
+  },
+  blurredValue: {
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  maskedText: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '600',
+    fontStyle: 'italic',
   },
 });
