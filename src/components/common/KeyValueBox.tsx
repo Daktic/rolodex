@@ -122,11 +122,10 @@ export default function KeyValueBox({
     >
       <Pressable
         style={styles.container}
-        onLongPress={onLongPress}
-        delayLongPress={500}
+        onPress={onLongPress}
       >
         <View style={styles.keyContainer}>
-          {keyEditable ? (
+          {keyEditable && !isBlurred ? (
             <TextInput
               style={styles.keyInput}
               value={key}
