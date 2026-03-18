@@ -8,8 +8,12 @@ import Swipeable from "react-native-gesture-handler/Swipeable";
 
 const PROFILE_ID = getProfileId();
 
-export default function Masks() {
-    const [currentMask, setCurrentMask] = useState<any>(null);
+interface MasksProps {
+    onMaskChange?: (mask: Mask | null) => void;
+}
+
+export default function Masks({ onMaskChange }: MasksProps) {
+    const [currentMask, setCurrentMask] = useState<Mask | null>(null);
     const [masks, setMasks] = useState<any[]>([]);
     const [dropdownVisible, setDropdownVisible] = useState(false);
     const [dialogVisible, setDialogVisible] = useState(false);
@@ -19,13 +23,16 @@ export default function Masks() {
         getMasks(PROFILE_ID).then(fetchedMasks => {
             setMasks(fetchedMasks);
             if (fetchedMasks.length > 0) {
-                setCurrentMask(fetchedMasks[0]);
+                const firstMask = fetchedMasks[0];
+                setCurrentMask(firstMask);
+                onMaskChange?.(firstMask);
             }
         });
     }, []);
 
-    const handleMaskSelect = (mask: any) => {
+    const handleMaskSelect = (mask: Mask) => {
         setCurrentMask(mask);
+        onMaskChange?.(mask);
         setDropdownVisible(false);
     };
 
@@ -46,6 +53,7 @@ export default function Masks() {
                     const newMask = fetchedMasks.find(m => m.name === newMaskName);
                     if (newMask) {
                         setCurrentMask(newMask);
+                        onMaskChange?.(newMask);
                     }
                 });
             });
@@ -67,6 +75,7 @@ export default function Masks() {
                 const newMask = fetchedMasks[fetchedMasks.length - 1];
                 if (newMask) {
                     setCurrentMask(newMask);
+                    onMaskChange?.(newMask);
                 }
             });
         })

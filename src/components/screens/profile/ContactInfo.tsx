@@ -1,13 +1,19 @@
 import { useState, useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import KVBContainer, { KeyValuePair } from '../../common/KVBContainer';
-import { getProfileFields, upsertProfileField, deleteProfileField } from '@/services/storage';
+import { getProfileFields, upsertProfileField, deleteProfileField, getMaskFields } from '@/services/storage';
+import { Mask } from '@/types/storage';
+import { getProfileId } from '@/services/wallet';
 
-// TODO: Replace with actual profile ID from wallet/auth
-const PROFILE_ID = "temp-profile-id";
+const PROFILE_ID = getProfileId();
 
-export default function ContactInfo() {
+interface ContactInfoProps {
+  currentMask: Mask | null;
+}
+
+export default function ContactInfo({ currentMask }: ContactInfoProps) {
   const [fields, setFields] = useState<KeyValuePair[]>([]);
+  const [maskedFieldIds, setMaskedFieldIds] = useState<Set<string>>(new Set());
 
   // Load profile fields on mount
   useEffect(() => {
@@ -26,6 +32,25 @@ export default function ContactInfo() {
     };
     loadFields();
   }, []);
+
+  // Load masked fields when mask changes
+  useEffect(() => {
+    const loadMaskedFields = async () => {
+      if (!currentMask) {
+        setMaskedFieldIds(new Set());
+        return;
+      }
+
+      try {
+        const maskFields = await getMaskFields(currentMask.id);
+        const maskedIds = new Set(maskFields.map(field => field.id));
+        setMaskedFieldIds(maskedIds);
+      } catch (error) {
+        console.error("Failed to load masked fields:", error);
+      }
+    };
+    loadMaskedFields();
+  }, [currentMask]);
 
   const handleUpdate = async (id: string, key: string, value: string) => {
     // Update local state
@@ -64,6 +89,20 @@ export default function ContactInfo() {
     // Note: Field will be saved when user types (via handleUpdate)
   };
 
+  const handleMaskToggle = (fieldId: string, isMasked: boolean) => {
+    if (!currentMask) return;
+
+    setMaskedFieldIds(prev => {
+      const newSet = new Set(prev);
+      if (isMasked) {
+        newSet.add(fieldId);
+      } else {
+        newSet.delete(fieldId);
+      }
+      return newSet;
+    });
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.sectionTitle}>Contact Fields</Text>
@@ -73,6 +112,9 @@ export default function ContactInfo() {
         onDelete={handleDelete}
         onAdd={handleAdd}
         showAddButton={true}
+        currentMask={currentMask}
+        maskedFieldIds={maskedFieldIds}
+        onMaskToggle={handleMaskToggle}
       />
     </View>
   );
