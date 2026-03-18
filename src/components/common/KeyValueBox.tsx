@@ -111,10 +111,7 @@ export default function KeyValueBox({
     swipeableRef.current?.close();
   };
 
-  const renderLeftActions = (
-    progress: Animated.AnimatedInterpolation<number>,
-    dragX: Animated.AnimatedInterpolation<number>
-  ) => {
+  const renderLeftActions = () => {
     // Invisible action area that triggers mask/unmask
     return <View style={{ width: 80 }} />;
   };
