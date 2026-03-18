@@ -1,4 +1,4 @@
-import { Drama, ChevronDown, Plus, Trash2 } from "lucide-react-native";
+import { Drama, ChevronDown, Plus, Trash2, Share } from "lucide-react-native";
 import { StyleSheet, Text, View, TouchableOpacity, Modal, ScrollView, TextInput, Pressable, Animated } from "react-native";
 import { useState, useEffect } from "react";
 import {deleteMask, getMasks, upsertMask} from "@/services/storage";
@@ -10,9 +10,10 @@ const PROFILE_ID = getProfileId();
 
 interface MasksProps {
     onMaskChange?: (mask: Mask | null) => void;
+    onSharePress?: () => void;
 }
 
-export default function Masks({ onMaskChange }: MasksProps) {
+export default function Masks({ onMaskChange, onSharePress }: MasksProps) {
     const [currentMask, setCurrentMask] = useState<Mask | null>(null);
     const [masks, setMasks] = useState<any[]>([]);
     const [dropdownVisible, setDropdownVisible] = useState(false);
@@ -106,6 +107,12 @@ export default function Masks({ onMaskChange }: MasksProps) {
                 >
                     <Text style={styles.title}>{currentMask.name}</Text>
                     <ChevronDown size={24} color="#000" style={styles.chevron} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={styles.shareButton}
+                    onPress={onSharePress}
+                >
+                    <Share size={24} color="#007AFF" />
                 </TouchableOpacity>
             </View>
 
@@ -201,6 +208,7 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
         paddingTop: 60,
         paddingHorizontal: 20,
         paddingBottom: 20,
@@ -343,5 +351,9 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 16,
         fontWeight: '600',
+    },
+    shareButton: {
+        padding: 8,
+        marginLeft: 'auto',
     },
 });
