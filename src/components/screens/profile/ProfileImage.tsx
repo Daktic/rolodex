@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { updateProfileAvatar, getProfile } from '@/services/storage';
+import {getProfileId} from "@/services/wallet";
 
-// TODO: Replace with actual profile ID from wallet/auth
-const PROFILE_ID = "temp-profile-id";
+const PROFILE_ID = getProfileId();
 
 const updateProfileImage = async (imageUri: string) => {
   await updateProfileAvatar(PROFILE_ID, imageUri);

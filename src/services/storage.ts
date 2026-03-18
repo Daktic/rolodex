@@ -1,5 +1,6 @@
 import * as SQLite from "expo-sqlite";
 import type { Profile, ProfileField, Mask, Connection, ConnectionField, Annotation } from "@/types/storage";
+import {getProfileId} from "@/services/wallet";
 
 let dbInstance: SQLite.SQLiteDatabase | null = null;
 
@@ -26,9 +27,8 @@ const creationStatements: Record<string, string> = {
 
   masks: `
     CREATE TABLE IF NOT EXISTS masks (
-      id TEXT PRIMARY KEY,
+      name TEXT PRIMARY KEY,
       profile_id TEXT NOT NULL,
-      name TEXT NOT NULL,
       created_at INTEGER NOT NULL,
       FOREIGN KEY (profile_id) REFERENCES profile(id)
     )
@@ -78,6 +78,13 @@ const creationStatements: Record<string, string> = {
   `
 };
 
+
+const defaultInsertStatements: Record<string, string> = {
+  masks: `
+    INSERT INTO masks (name, profile_id, created_at)
+    values ('All', '${getProfileId()}', current_timestamp)`,
+}
+
 async function initDatabase() {
   if (dbInstance) return dbInstance;
 
@@ -89,6 +96,16 @@ async function initDatabase() {
       await db.execAsync(statement);
     } catch (e) {
       console.error("Error creating table:", e);
+    }
+  }
+
+  // Insert default data
+  for (const table of Object.keys(defaultInsertStatements)) {
+    const insert = defaultInsertStatements[table];
+    try {
+      await db.execAsync(insert);
+    } catch (e) {
+      console.error(`Error inserting default data into ${table}:`, e);
     }
   }
 
