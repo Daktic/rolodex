@@ -1,5 +1,6 @@
 import * as SQLite from "expo-sqlite";
 import type { Profile, ProfileField, Mask, Connection, ConnectionField, Annotation } from "@/types/storage";
+import {getProfileId} from "@/services/wallet";
 
 let dbInstance: SQLite.SQLiteDatabase | null = null;
 
@@ -27,8 +28,8 @@ const creationStatements: Record<string, string> = {
   masks: `
     CREATE TABLE IF NOT EXISTS masks (
       id TEXT PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE,
       profile_id TEXT NOT NULL,
-      name TEXT NOT NULL,
       created_at INTEGER NOT NULL,
       FOREIGN KEY (profile_id) REFERENCES profile(id)
     )
@@ -78,6 +79,13 @@ const creationStatements: Record<string, string> = {
   `
 };
 
+
+const defaultInsertStatements: Record<string, string> = {
+  masks: `
+    INSERT OR IGNORE INTO masks (id, name, profile_id, created_at)
+    VALUES ('mask-all-${getProfileId()}', 'All', '${getProfileId()}', ${Date.now()})`,
+}
+
 async function initDatabase() {
   if (dbInstance) return dbInstance;
 
@@ -89,6 +97,16 @@ async function initDatabase() {
       await db.execAsync(statement);
     } catch (e) {
       console.error("Error creating table:", e);
+    }
+  }
+
+  // Insert default data
+  for (const table of Object.keys(defaultInsertStatements)) {
+    const insert = defaultInsertStatements[table];
+    try {
+      await db.execAsync(insert);
+    } catch (e) {
+      console.error(`Error inserting default data into ${table}:`, e);
     }
   }
 
@@ -117,6 +135,49 @@ async function runMigrations(db: SQLite.SQLiteDatabase) {
     console.log("Migration: Added avatar_uri to connections");
   } catch (e) {
     // Column already exists, ignore
+  }
+
+  // Migrate masks table to add id column
+  try {
+    // Check if masks table has id column by trying to select it
+    await db.getFirstAsync(`SELECT id FROM masks LIMIT 1`);
+    // If no error, id column exists, no migration needed
+  } catch (e) {
+    // id column doesn't exist, need to migrate
+    console.log("Migration: Recreating masks table with id column");
+
+    // Create new table with correct schema
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS masks_new (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL UNIQUE,
+        profile_id TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY (profile_id) REFERENCES profile(id)
+      )
+    `);
+
+    // Copy data from old table, generating ids
+    try {
+      const oldMasks = await db.getAllAsync<{name: string, profile_id: string, created_at: number}>(
+        `SELECT name, profile_id, created_at FROM masks`
+      );
+
+      for (const mask of oldMasks) {
+        await db.runAsync(
+          `INSERT INTO masks_new (id, name, profile_id, created_at) VALUES (?, ?, ?, ?)`,
+          [`mask-${mask.name.toLowerCase()}-${mask.profile_id}`, mask.name, mask.profile_id, mask.created_at]
+        );
+      }
+    } catch (e) {
+      console.log("No existing masks to migrate");
+    }
+
+    // Drop old table and rename new one
+    await db.execAsync(`DROP TABLE IF EXISTS masks`);
+    await db.execAsync(`ALTER TABLE masks_new RENAME TO masks`);
+
+    console.log("Migration: Masks table migration complete");
   }
 }
 
@@ -239,18 +300,18 @@ async function deleteProfileField(id: string): Promise<void> {
 // ============================================================================
 
 async function upsertMask(
-  id: string,
-  profileId: string,
   name: string,
+  profileId: string,
   createdAt?: number
 ): Promise<void> {
   const db = getDatabase();
   const timestamp = createdAt || Date.now();
+  const id = `mask-${name.toLowerCase().replace(/\s+/g, '-')}-${profileId}`;
   await db.runAsync(
-    `INSERT INTO masks (id, profile_id, name, created_at)
+    `INSERT INTO masks (id, name, profile_id, created_at)
      VALUES (?, ?, ?, ?)
-     ON CONFLICT(id) DO UPDATE SET name = excluded.name`,
-    [id, profileId, name, timestamp]
+     ON CONFLICT(name) DO UPDATE SET name = excluded.name`,
+    [id, name, profileId, timestamp]
   );
 }
 
@@ -262,9 +323,9 @@ async function getMasks(profileId: string): Promise<Mask[]> {
   );
 }
 
-async function deleteMask(id: string): Promise<void> {
+async function deleteMask(name: string): Promise<void> {
   const db = getDatabase();
-  await db.runAsync("DELETE FROM masks WHERE id = ?", [id]);
+  await db.runAsync("DELETE FROM masks WHERE name = ?", [name]);
 }
 
 // ============================================================================

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, View, TouchableOpacity, Text } from 'react-native';
 import KeyValueBox from './KeyValueBox';
+import { Mask } from '@/types/storage';
 
 export interface KeyValuePair {
   id: string;
@@ -14,6 +15,9 @@ interface KVBContainerProps {
   onDelete?: (id: string) => void;
   onAdd?: () => void;
   showAddButton?: boolean;
+  currentMask?: Mask | null;
+  maskedFieldIds?: Set<string>;
+  onMaskToggle?: (fieldId: string, isMasked: boolean) => void;
 }
 
 export default function KVBContainer({
@@ -22,6 +26,9 @@ export default function KVBContainer({
   onDelete,
   onAdd,
   showAddButton = true,
+  currentMask,
+  maskedFieldIds = new Set(),
+  onMaskToggle,
 }: KVBContainerProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -56,6 +63,7 @@ export default function KVBContainer({
     <View style={styles.container}>
       {items.map((item) => {
         const isEditing = editingId === item.id;
+        const isMasked = maskedFieldIds.has(item.id);
         return (
           <KeyValueBox
             key={item.id}
@@ -67,6 +75,10 @@ export default function KVBContainer({
             onValueChange={(newValue) => handleValueChange(item.id, newValue)}
             onLongPress={() => handleLongPress(item.id)}
             onDelete={onDelete ? () => handleDelete(item.id) : undefined}
+            currentMask={currentMask}
+            fieldId={item.id}
+            isMasked={isMasked}
+            onMaskToggle={onMaskToggle}
           />
         );
       })}

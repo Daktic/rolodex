@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, TextInput, Pressable, Alert, Animated } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
+import { Mask } from '@/types/storage';
+import { setMaskFields, getMaskFields } from '@/services/storage';
 
 interface KeyValueBoxProps {
   initialKey?: string;
@@ -11,6 +13,10 @@ interface KeyValueBoxProps {
   onValueChange?: (value: string) => void;
   onLongPress?: () => void;
   onDelete?: () => void;
+  currentMask?: Mask | null;
+  fieldId?: string;
+  isMasked?: boolean;
+  onMaskToggle?: (fieldId: string, isMasked: boolean) => void;
 }
 
 export default function KeyValueBox({
@@ -22,9 +28,14 @@ export default function KeyValueBox({
   onValueChange,
   onLongPress,
   onDelete,
+  currentMask,
+  fieldId,
+  isMasked = false,
+  onMaskToggle,
 }: KeyValueBoxProps) {
   const [key, setKey] = useState(initialKey);
   const [value, setValue] = useState(initialValue);
+  const swipeableRef = useRef<Swipeable>(null);
 
   // Update local state when props change
   useEffect(() => {
@@ -46,6 +57,10 @@ export default function KeyValueBox({
   };
 
   const handleDelete = () => {
+    if (isMasked) {
+      // Don't allow deletion of blurred fields
+      return;
+    }
     Alert.alert(
       'Delete Field',
       `Are you sure you want to delete "${key || 'this field'}"?`,
@@ -58,6 +73,47 @@ export default function KeyValueBox({
         },
       ]
     );
+  };
+
+  const handleSwipeRight = async () => {
+    if (!currentMask || !fieldId) {
+      swipeableRef.current?.close();
+      return;
+    }
+
+    const newMaskedState = !isMasked;
+
+    // Update parent state immediately for UI responsiveness
+    onMaskToggle?.(fieldId, newMaskedState);
+
+    // Persist to database
+    try {
+      const currentMaskFields = await getMaskFields(currentMask.id);
+      const currentFieldIds = currentMaskFields.map(f => f.id);
+
+      let updatedFieldIds: string[];
+      if (newMaskedState) {
+        // Add field to mask
+        updatedFieldIds = [...currentFieldIds, fieldId];
+      } else {
+        // Remove field from mask
+        updatedFieldIds = currentFieldIds.filter(id => id !== fieldId);
+      }
+
+      await setMaskFields(currentMask.id, updatedFieldIds);
+    } catch (error) {
+      console.error("Failed to update mask fields:", error);
+      // Revert UI state on error
+      onMaskToggle?.(fieldId, !newMaskedState);
+    }
+
+    // Close the swipeable to bounce back
+    swipeableRef.current?.close();
+  };
+
+  const renderLeftActions = () => {
+    // Invisible action area that triggers mask/unmask
+    return <View style={{ width: 80 }} />;
   };
 
   const renderRightActions = (
@@ -77,7 +133,10 @@ export default function KeyValueBox({
           { transform: [{ translateX: trans }] },
         ]}
       >
-        <Pressable style={styles.deleteButton} onPress={handleDelete}>
+        <Pressable
+          style={[styles.deleteButton, isMasked && styles.deleteButtonDisabled]}
+          onPress={handleDelete}
+        >
           <Text style={styles.deleteText}>Delete</Text>
         </Pressable>
       </Animated.View>
@@ -86,16 +145,23 @@ export default function KeyValueBox({
 
   return (
     <Swipeable
+      ref={swipeableRef}
+      renderLeftActions={renderLeftActions}
       renderRightActions={onDelete ? renderRightActions : undefined}
+      overshootLeft={false}
       overshootRight={false}
+      onSwipeableOpen={(direction) => {
+        if (direction === 'left') {
+          handleSwipeRight();
+        }
+      }}
     >
       <Pressable
         style={styles.container}
-        onLongPress={onLongPress}
-        delayLongPress={500}
+        onPress={onLongPress}
       >
         <View style={styles.keyContainer}>
-          {keyEditable ? (
+          {keyEditable && !isMasked ? (
             <TextInput
               style={styles.keyInput}
               value={key}
@@ -108,8 +174,10 @@ export default function KeyValueBox({
           )}
         </View>
 
-        <View style={styles.valueContainer}>
-          {valueEditable ? (
+        <View style={[styles.valueContainer, isMasked && styles.blurredValue]}>
+          {isMasked ? (
+            <Text style={styles.maskedText}>Masked</Text>
+          ) : valueEditable ? (
             <TextInput
               style={styles.valueInput}
               value={value}
@@ -118,7 +186,9 @@ export default function KeyValueBox({
               placeholderTextColor="#999"
             />
           ) : (
-            <Text style={styles.valueText}>{value || 'Value'}</Text>
+            <Text style={styles.valueText}>
+              {value || 'Value'}
+            </Text>
           )}
         </View>
       </Pressable>
@@ -184,5 +254,22 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 14,
+  },
+  deleteButtonDisabled: {
+    backgroundColor: '#ccc',
+  },
+  blurredValue: {
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  maskedText: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '600',
+    fontStyle: 'italic',
   },
 });
