@@ -6,14 +6,16 @@ import ProfileDisplayName from '../components/screens/profile/ProfileDisplayName
 import Masks from '@/components/screens/profile/Masks';
 import { Mask } from '@/types/storage';
 import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '@/navigation/AppNavigator';
 
 export default function ProfileScreen() {
   const [currentMask, setCurrentMask] = useState<Mask | null>(null);
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const handleSharePress = () => {
     if (currentMask?.id) {
-      navigation.navigate('Share' as never, { maskId: currentMask.id } as never);
+      navigation.navigate('Share', { maskId: currentMask.id });
     }
   };
 

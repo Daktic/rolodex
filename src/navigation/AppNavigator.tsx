@@ -3,7 +3,12 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import ProfileScreen from '../screens/ProfileScreen';
 import ShareScreen from '../screens/ShareScreen';
 
-const Stack = createNativeStackNavigator();
+export type RootStackParamList = {
+  Profile: undefined;
+  Share: { maskId: string };
+};
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
   return (
