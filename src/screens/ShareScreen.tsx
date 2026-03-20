@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View, ScrollView } from 'react-native';
 import { useEffect, useState } from 'react';
-import { generatePayload } from '@/services/exchange';
+import { generatePayload } from '@/services/connection/exchange';
 import { PayloadV1 } from '@/types/exchange';
 import ConnectionStatus from '@/components/screens/share/ConnectionStatus';
 import { useRoute } from '@react-navigation/native';

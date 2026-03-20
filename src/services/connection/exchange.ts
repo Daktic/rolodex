@@ -1,5 +1,5 @@
 import {keccak256, stringToBytes} from "viem";
-import {getMask, getMaskFields, getProfile, getProfileFields} from "./storage";
+import {getMask, getMaskFields, getProfile, getProfileFields} from "../storage";
 import { PayloadV1, ExchangeV1 } from "@/types/exchange";
 
 const generatePayload = async (maskId: string): Promise<PayloadV1> => {
@@ -38,6 +38,20 @@ const generatePayload = async (maskId: string): Promise<PayloadV1> => {
     };
 }
 
+const generateExchangeId = (signature: string, issuer: string, timestamp: number, payload: string) => {
+    function canonicalize(obj: unknown): string {
+        return JSON.stringify(obj, Object.keys(obj as Record<string, unknown>).sort());
+    }
+
+    const input = canonicalize({
+        signature,
+        issuer,
+        timestamp,
+        payload,
+    });
+    return keccak256(stringToBytes(input), 'bytes');
+}
+
 const generateConnectionProtocol = async (
     maskId: string,
     issuer: string,
@@ -74,18 +88,4 @@ const generateConnectionProtocol = async (
     };
 }
 
-const generateExchangeId = (signature: string, issuer: string, timestamp: number, payload: string) => {
-    function canonicalize(obj: unknown): string {
-        return JSON.stringify(obj, Object.keys(obj as Record<string, unknown>).sort());
-    }
-
-    const input = canonicalize({
-        signature,
-        issuer,
-        timestamp,
-        payload,
-    });
-    return keccak256(stringToBytes(input), 'bytes');
-}
-
-export { generatePayload, generateConnectionProtocol, generateExchangeId };
+export { generateConnectionProtocol };
