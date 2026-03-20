@@ -2,7 +2,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native';
 import AppNavigator from './src/navigation/AppNavigator';
 import {useEffect, useState} from "react";
-import {initDatabase} from "./src/services/storage";
+import {initDatabase} from "@/services/storage";
 import Loading from "./src/components/common/Loading";
 
 export default function App() {

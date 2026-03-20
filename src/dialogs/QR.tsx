@@ -5,6 +5,7 @@ import { generateConnectionProtocol } from '@/services/connection/exchange';
 import { useEffect, useState } from 'react';
 import { ExchangeV1 } from '@/types/exchange';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { upsertConnection, upsertConnectionField } from '@/services/storage';
 
 interface QRDialogProps {
     visible: boolean;
@@ -45,9 +46,44 @@ export default function QRDialog({ visible, onClose, maskId, issuer, signMessage
         setShowCamera(true);
     };
 
-    const handleQRScanned = ({ data }: { data: string }) => {
-        console.log('QR code scanned:', data);
-        console.log('Scanned QR code:', JSON.stringify(JSON.parse(data), null, 2));
+    const handleQRScanned = async ({ data }: { data: string }) => {
+        try {
+            const scannedData: ExchangeV1 = JSON.parse(data);
+            console.log('Scanned QR code:', JSON.stringify(scannedData, null, 2));
+
+            // Parse the payload
+            const payload = JSON.parse(scannedData.payload);
+            const { display_name, avatar_uri, fields } = payload;
+
+            // Save connection to database
+            const connectionId = scannedData.exchangeId;
+            await upsertConnection(
+                connectionId,
+                scannedData.issuer,
+                display_name,
+                scannedData.payload,
+                avatar_uri,
+                scannedData.timestamp
+            );
+
+            // Save connection fields
+            if (fields && Array.isArray(fields)) {
+                for (const field of fields) {
+                    await upsertConnectionField(
+                        `${connectionId}-${field.label}`,
+                        connectionId,
+                        field.label,
+                        field.value
+                    );
+                }
+            }
+
+            console.log('Connection saved successfully!');
+            setShowCamera(false);
+            onClose();
+        } catch (error) {
+            console.error('Failed to process QR code:', error);
+        }
     };
 
     return (
