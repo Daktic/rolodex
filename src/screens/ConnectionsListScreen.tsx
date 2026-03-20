@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { StyleSheet, View, FlatList, Text } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '@/navigation/AppNavigator';
+import type { ConnectionsStackParamList } from '@/navigation/ConnectionsStack';
 import { Connection, ConnectionField } from '@/types/storage';
 import { getAllConnections, getConnectionFields, deleteConnection } from '@/services/storage';
 import ConnectionContainer from '@/components/screens/connectionList/ConnectionContainer';
@@ -16,7 +16,7 @@ interface ConnectionWithFields {
 const ConnectionsListScreen = () => {
   const [connections, setConnections] = useState<ConnectionWithFields[]>([]);
   const [loading, setLoading] = useState(true);
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<ConnectionsStackParamList>>();
 
   const loadConnections = async () => {
     try {

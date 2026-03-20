@@ -8,7 +8,7 @@ import { ExchangeV1 } from '@/types/exchange';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '@/navigation/AppNavigator';
+import type { ConnectionsStackParamList } from '@/navigation/ConnectionsStack';
 
 interface QRDialogProps {
     visible: boolean;
@@ -22,7 +22,7 @@ export default function QRDialog({ visible, onClose, maskId, issuer, signMessage
     const [qrData, setQrData] = useState<string>('');
     const [showCamera, setShowCamera] = useState(false);
     const [permission, requestPermission] = useCameraPermissions();
-    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+    const navigation = useNavigation<NativeStackNavigationProp<ConnectionsStackParamList>>();
 
     useEffect(() => {
         if (visible && maskId && !showCamera) {

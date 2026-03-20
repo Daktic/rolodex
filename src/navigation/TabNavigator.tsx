@@ -1,7 +1,7 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { User, Users } from 'lucide-react-native';
-import ProfileScreen from '../screens/ProfileScreen';
-import ConnectionsListScreen from '../screens/ConnectionsListScreen';
+import ProfileStack from './ProfileStack';
+import ConnectionsStack from './ConnectionsStack';
 
 export type TabParamList = {
   ProfileTab: undefined;
@@ -34,7 +34,7 @@ export default function TabNavigator() {
     >
       <Tab.Screen
         name="ProfileTab"
-        component={ProfileScreen}
+        component={ProfileStack}
         options={{
           tabBarLabel: 'Profile',
           tabBarIcon: ({ color, size }) => (
@@ -44,7 +44,7 @@ export default function TabNavigator() {
       />
       <Tab.Screen
         name="ConnectionsTab"
-        component={ConnectionsListScreen}
+        component={ConnectionsStack}
         options={{
           tabBarLabel: 'Connections',
           tabBarIcon: ({ color, size }) => (
