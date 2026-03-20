@@ -2,10 +2,13 @@ import { Camera, QrCode } from 'lucide-react-native';
 import { Modal, View, StyleSheet, TouchableOpacity } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { generateConnectionProtocol } from '@/services/connection/exchange';
+import { processScannedQR } from '@/services/connection/qr';
 import { useEffect, useState } from 'react';
 import { ExchangeV1 } from '@/types/exchange';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { upsertConnection, upsertConnectionField } from '@/services/storage';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '@/navigation/AppNavigator';
 
 interface QRDialogProps {
     visible: boolean;
@@ -19,6 +22,7 @@ export default function QRDialog({ visible, onClose, maskId, issuer, signMessage
     const [qrData, setQrData] = useState<string>('');
     const [showCamera, setShowCamera] = useState(false);
     const [permission, requestPermission] = useCameraPermissions();
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
     useEffect(() => {
         if (visible && maskId && !showCamera) {
@@ -47,42 +51,13 @@ export default function QRDialog({ visible, onClose, maskId, issuer, signMessage
     };
 
     const handleQRScanned = async ({ data }: { data: string }) => {
-        try {
-            const scannedData: ExchangeV1 = JSON.parse(data);
-            console.log('Scanned QR code:', JSON.stringify(scannedData, null, 2));
+        const connectionId = await processScannedQR(data);
 
-            // Parse the payload
-            const payload = JSON.parse(scannedData.payload);
-            const { display_name, avatar_uri, fields } = payload;
-
-            // Save connection to database
-            const connectionId = scannedData.exchangeId;
-            await upsertConnection(
-                connectionId,
-                scannedData.issuer,
-                display_name,
-                scannedData.payload,
-                avatar_uri,
-                scannedData.timestamp
-            );
-
-            // Save connection fields
-            if (fields && Array.isArray(fields)) {
-                for (const field of fields) {
-                    await upsertConnectionField(
-                        `${connectionId}-${field.label}`,
-                        connectionId,
-                        field.label,
-                        field.value
-                    );
-                }
-            }
-
-            console.log('Connection saved successfully!');
+        if (connectionId) {
             setShowCamera(false);
             onClose();
-        } catch (error) {
-            console.error('Failed to process QR code:', error);
+            // Navigate to the connection detail screen
+            navigation.navigate('ConnectionDetail', { connectionId });
         }
     };
 
