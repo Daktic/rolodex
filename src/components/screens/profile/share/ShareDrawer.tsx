@@ -1,11 +1,29 @@
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Modal, StyleSheet, Text, TouchableOpacity, View, Dimensions } from "react-native";
+import { useEffect, useState } from "react";
+import { generatePayload } from "@/services/exchange";
+import { PayloadV1 } from "@/types/exchange";
+import ConnectionStatus from "./ConnectionStatus";
+import PayloadContainer from "./PayloadContainer";
 
 interface ShareDrawerProps {
     visible: boolean;
     onClose: () => void;
+    maskId: string;
 }
 
-export default function ShareDrawer({ visible, onClose }: ShareDrawerProps) {
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+
+export default function ShareDrawer({ visible, onClose, maskId }: ShareDrawerProps) {
+    const [payload, setPayload] = useState<PayloadV1 | null>(null);
+
+    useEffect(() => {
+        if (visible && maskId) {
+            generatePayload(maskId)
+                .then(setPayload)
+                .catch(error => console.error("Failed to generate payload:", error));
+        }
+    }, [visible, maskId]);
+
     return (
         <Modal
             visible={visible}
@@ -26,20 +44,12 @@ export default function ShareDrawer({ visible, onClose }: ShareDrawerProps) {
                         <View style={styles.drawerHandle} />
                         <Text style={styles.drawerTitle}>Share Contact</Text>
                         <View style={styles.drawerContent}>
-                            <View style={styles.connectionStatus}>
-                                <View style={styles.pulsingDot} />
-                                <Text style={styles.connectionText}>Waiting for connection...</Text>
-                            </View>
+                            <ConnectionStatus />
                             <Text style={styles.drawerDescription}>
                                 Share your contact information using the protocol.
                                 The other device needs to be ready to receive.
                             </Text>
-                            <TouchableOpacity
-                                style={[styles.button, styles.cancelButton]}
-                                onPress={onClose}
-                            >
-                                <Text style={styles.cancelButtonText}>Cancel</Text>
-                            </TouchableOpacity>
+                            <PayloadContainer payload={payload} />
                         </View>
                     </View>
                 </TouchableOpacity>
@@ -59,7 +69,7 @@ const styles = StyleSheet.create({
         borderBottomLeftRadius: 20,
         borderBottomRightRadius: 20,
         paddingBottom: 40,
-        minHeight: 300,
+        height: SCREEN_HEIGHT * 2 / 3,
     },
     drawerHandle: {
         width: 40,
@@ -78,27 +88,7 @@ const styles = StyleSheet.create({
     },
     drawerContent: {
         paddingHorizontal: 24,
-    },
-    connectionStatus: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 24,
-        paddingVertical: 16,
-        backgroundColor: '#f8f8f8',
-        borderRadius: 12,
-    },
-    pulsingDot: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
-        backgroundColor: '#007AFF',
-        marginRight: 12,
-    },
-    connectionText: {
-        fontSize: 16,
-        color: '#333',
-        fontWeight: '500',
+        flex: 1,
     },
     drawerDescription: {
         fontSize: 14,
@@ -106,19 +96,5 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         lineHeight: 20,
         marginBottom: 24,
-    },
-    button: {
-        flex: 1,
-        padding: 12,
-        borderRadius: 8,
-        alignItems: 'center',
-    },
-    cancelButton: {
-        backgroundColor: '#f0f0f0',
-    },
-    cancelButtonText: {
-        color: '#666',
-        fontSize: 16,
-        fontWeight: '600',
     },
 });

@@ -4,7 +4,7 @@ import ProfileImage from '../components/screens/profile/ProfileImage';
 import ContactInfo from '../components/screens/profile/ContactInfo';
 import ProfileDisplayName from '../components/screens/profile/ProfileDisplayName';
 import Masks from '@/components/screens/profile/Masks';
-import ShareDrawer from '@/components/screens/profile/ShareDrawer';
+import ShareDrawer from '@/components/screens/profile/share/ShareDrawer';
 import { Mask } from '@/types/storage';
 
 
