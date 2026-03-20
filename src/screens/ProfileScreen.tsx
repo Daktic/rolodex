@@ -14,7 +14,7 @@ export default function ProfileScreen() {
 
   return (
     <>
-      <ScrollView style={styles.container}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
         <Masks
           onMaskChange={setCurrentMask}
           onSharePress={() => setShareDrawerVisible(true)}
@@ -24,9 +24,8 @@ export default function ProfileScreen() {
         <ContactInfo currentMask={currentMask} />
       </ScrollView>
       <ShareDrawer
-        visible={shareDrawerVisible}
-        onClose={() => setShareDrawerVisible(false)}
-      />
+          visible={shareDrawerVisible}
+          onClose={() => setShareDrawerVisible(false)} maskId={currentMask?.id!}      />
     </>
   );
 }
@@ -35,5 +34,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  contentContainer: {
+    paddingBottom: 100,
   }
 });
