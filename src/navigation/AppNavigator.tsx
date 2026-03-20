@@ -1,13 +1,12 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import ProfileScreen from '../screens/ProfileScreen';
+import TabNavigator from './TabNavigator';
 import ShareScreen from '../screens/ShareScreen';
-import ConnectionsListScreen from '../screens/ConnectionsListScreen';
 
 export type RootStackParamList = {
-  Profile: undefined;
+  MainTabs: undefined;
   Share: { maskId: string };
-  ConnectionsList: undefined;
+  ConnectionDetail: { connectionId: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -15,10 +14,10 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function AppNavigator() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="ConnectionsList">
+      <Stack.Navigator>
         <Stack.Screen
-          name="Profile"
-          component={ProfileScreen}
+          name="MainTabs"
+          component={TabNavigator}
           options={{ headerShown: false }}
         />
         <Stack.Screen
@@ -30,14 +29,15 @@ export default function AppNavigator() {
             presentation: 'card'
           }}
         />
-        <Stack.Screen
-          name="ConnectionsList"
-          component={ConnectionsListScreen}
+        {/* Connection detail screen will be added here later */}
+        {/* <Stack.Screen
+          name="ConnectionDetail"
+          component={ConnectionDetailScreen}
           options={{
             headerShown: true,
-            title: 'Connections'
+            title: 'Connection',
           }}
-        />
+        /> */}
       </Stack.Navigator>
     </NavigationContainer>
   );
