@@ -88,4 +88,16 @@ const generateConnectionProtocol = async (
     };
 }
 
-export { generateConnectionProtocol };
+const decodeConnectionProtocol = (protocol: ExchangeV1) => {
+    //TODO: go from protocol to storage in contacts
+    return {
+        schemaVersion: protocol.schemaVersion,
+        exchangeId: protocol.exchangeId,
+        signature: protocol.signature,
+        issuer: protocol.issuer,
+        timestamp: protocol.timestamp,
+        payload: JSON.parse(protocol.payload)
+    };
+}
+
+export { generatePayload, generateConnectionProtocol, decodeConnectionProtocol };

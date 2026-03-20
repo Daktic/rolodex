@@ -1,15 +1,23 @@
-import { StyleSheet, Text, View, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { useEffect, useState } from 'react';
 import { generatePayload } from '@/services/connection/exchange';
 import { PayloadV1 } from '@/types/exchange';
 import ConnectionStatus from '@/components/screens/share/ConnectionStatus';
 import { useRoute } from '@react-navigation/native';
-import {QrCode, SquaresExclude} from "lucide-react-native";
+import { QrCode } from "lucide-react-native";
+import QRDialog from '@/dialogs/QR';
 
 export default function ShareScreen() {
     const route = useRoute();
     const { maskId } = route.params as { maskId: string };
     const [payload, setPayload] = useState<PayloadV1 | null>(null);
+    const [qrDialogVisible, setQrDialogVisible] = useState(false);
+
+    // TODO: Replace with actual issuer and signMessage implementation
+    const issuer = "placeholder-issuer";
+    const signMessage = async (message: string) => {
+        return "placeholder-signature";
+    };
 
     useEffect(() => {
         if (maskId) {
@@ -21,24 +29,34 @@ export default function ShareScreen() {
 
     return (
         <View style={styles.container}>
-            {/*This is hidden for now while we get core NFC connection working*/}
-            {/*<View style={styles.connectMethodsContainer}>*/}
-            {/*    <View style={styles.methodItem}>*/}
-            {/*        <QrCode />*/}
-            {/*        <Text style={styles.methodLabel}>QR Code</Text>*/}
-            {/*    </View>*/}
-            {/*    <View style={styles.methodItem}>*/}
-            {/*        <SquaresExclude />*/}
-            {/*        <Text style={styles.methodLabel}>Connect Via</Text>*/}
-            {/*    </View>*/}
-            {/*</View>*/}
+            <View style={styles.connectMethodsContainer}>
+                <TouchableOpacity
+                    style={styles.methodItem}
+                    onPress={() => setQrDialogVisible(true)}
+                >
+                    <QrCode />
+                </TouchableOpacity>
+                {/*This is hidden for now while we get core NFC connection and QR working*/}
+                {/*<View style={styles.methodItem}>*/}
+                {/*    <SquaresExclude />*/}
+                {/*    <Text style={styles.methodLabel}>Connect Via</Text>*/}
+                {/*</View>*/}
+            </View>
+
+            <QRDialog
+                visible={qrDialogVisible}
+                onClose={() => setQrDialogVisible(false)}
+                maskId={maskId}
+                issuer={issuer}
+                signMessage={signMessage}
+            />
             <Text style={styles.title}>Share Contact</Text>
 
             <ConnectionStatus />
 
             <Text style={styles.description}>
-                Share your contact information using the protocol.
-                The other device needs to be ready to receive.
+                Tap phones to share contact info.{'\n'}
+                Ensure both parties have this screen open.
             </Text>
 
             <View style={styles.dataPreviewContainer}>
