@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, View, FlatList, Text } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '@/navigation/AppNavigator';
 import { Connection, ConnectionField } from '@/types/storage';
 import { getAllConnections, getConnectionFields, deleteConnection } from '@/services/storage';
 import ConnectionContainer from '@/components/screens/connectionList/ConnectionContainer';
@@ -14,6 +16,7 @@ interface ConnectionWithFields {
 const ConnectionsListScreen = () => {
   const [connections, setConnections] = useState<ConnectionWithFields[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const loadConnections = async () => {
     try {
@@ -44,8 +47,7 @@ const ConnectionsListScreen = () => {
   );
 
   const handlePress = (connection: Connection) => {
-    // TODO: Navigate to connection detail screen
-    console.log('Pressed connection:', connection.display_name);
+    navigation.navigate('ConnectionDetail', { connectionId: connection.id });
   };
 
   const handleDelete = async (connectionId: string) => {
@@ -64,7 +66,7 @@ const ConnectionsListScreen = () => {
   };
 
   if (loading) {
-    return <Loading visible={true} />;
+    return <Text>Loading</Text>
   }
 
   if (connections.length === 0) {
