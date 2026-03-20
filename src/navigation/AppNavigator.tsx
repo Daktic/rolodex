@@ -2,6 +2,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import TabNavigator from './TabNavigator';
 import ShareScreen from '../screens/ShareScreen';
+import ConnectionDetailScreen from '../screens/ConnectionDetailScreen';
 
 export type RootStackParamList = {
   MainTabs: undefined;
@@ -29,15 +30,14 @@ export default function AppNavigator() {
             presentation: 'card'
           }}
         />
-        {/* Connection detail screen will be added here later */}
-        {/* <Stack.Screen
+        <Stack.Screen
           name="ConnectionDetail"
           component={ConnectionDetailScreen}
           options={{
             headerShown: true,
             title: 'Connection',
           }}
-        /> */}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );
