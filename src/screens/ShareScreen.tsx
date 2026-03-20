@@ -21,16 +21,17 @@ export default function ShareScreen() {
 
     return (
         <View style={styles.container}>
-            <View style={styles.connectMethodsContainer}>
-                <View style={styles.methodItem}>
-                    <QrCode />
-                    <Text style={styles.methodLabel}>QR Code</Text>
-                </View>
-                <View style={styles.methodItem}>
-                    <SquaresExclude />
-                    <Text style={styles.methodLabel}>Connect Via</Text>
-                </View>
-            </View>
+            {/*This is hidden for now while we get core NFC connection working*/}
+            {/*<View style={styles.connectMethodsContainer}>*/}
+            {/*    <View style={styles.methodItem}>*/}
+            {/*        <QrCode />*/}
+            {/*        <Text style={styles.methodLabel}>QR Code</Text>*/}
+            {/*    </View>*/}
+            {/*    <View style={styles.methodItem}>*/}
+            {/*        <SquaresExclude />*/}
+            {/*        <Text style={styles.methodLabel}>Connect Via</Text>*/}
+            {/*    </View>*/}
+            {/*</View>*/}
             <Text style={styles.title}>Share Contact</Text>
 
             <ConnectionStatus />
