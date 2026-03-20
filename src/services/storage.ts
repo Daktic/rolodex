@@ -323,6 +323,14 @@ async function getMasks(profileId: string): Promise<Mask[]> {
   );
 }
 
+async function getMask(id: string): Promise<Mask | null> {
+  const db = getDatabase();
+  return await db.getFirstAsync<Mask>(
+    "SELECT * FROM masks WHERE id = ?",
+    [id]
+  );
+}
+
 async function deleteMask(name: string): Promise<void> {
   const db = getDatabase();
   await db.runAsync("DELETE FROM masks WHERE name = ?", [name]);
@@ -490,6 +498,7 @@ export {
   // Masks
   upsertMask,
   getMasks,
+  getMask,
   deleteMask,
   // Mask Fields
   setMaskFields,
