@@ -69,17 +69,25 @@ const ConnectionsListScreen = () => {
 
   if (connections.length === 0) {
     return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>No connections yet</Text>
-        <Text style={styles.emptySubtext}>
-          Scan a QR code or use NFC to add connections
-        </Text>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Connections</Text>
+        </View>
+        <View style={styles.emptyContent}>
+          <Text style={styles.emptyText}>No connections yet</Text>
+          <Text style={styles.emptySubtext}>
+            Scan a QR code or use NFC to add connections
+          </Text>
+        </View>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Connections</Text>
+      </View>
       <FlatList
         data={connections}
         keyExtractor={(item) => item.connection.id}
@@ -105,15 +113,24 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
+  header: {
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    backgroundColor: '#f5f5f5',
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+  },
   listContent: {
     paddingBottom: 20,
   },
-  emptyContainer: {
+  emptyContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#f5f5f5',
   },
   emptyText: {
     fontSize: 18,
