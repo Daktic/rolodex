@@ -80,12 +80,6 @@ const creationStatements: Record<string, string> = {
 };
 
 
-const defaultInsertStatements: Record<string, string> = {
-  masks: `
-    INSERT OR IGNORE INTO masks (id, name, profile_id, created_at)
-    VALUES ('mask-all-${getProfileId()}', 'All', '${getProfileId()}', ${Date.now()})`,
-}
-
 async function initDatabase() {
   if (dbInstance) return dbInstance;
 
@@ -97,16 +91,6 @@ async function initDatabase() {
       await db.execAsync(statement);
     } catch (e) {
       console.error("Error creating table:", e);
-    }
-  }
-
-  // Insert default data
-  for (const table of Object.keys(defaultInsertStatements)) {
-    const insert = defaultInsertStatements[table];
-    try {
-      await db.execAsync(insert);
-    } catch (e) {
-      console.error(`Error inserting default data into ${table}:`, e);
     }
   }
 
@@ -307,20 +291,56 @@ async function upsertMask(
   const db = getDatabase();
   const timestamp = createdAt || Date.now();
   const id = `mask-${name.toLowerCase().replace(/\s+/g, '-')}-${profileId}`;
+  console.log("upsertMask: Inserting mask with:", { id, name, profileId, timestamp });
   await db.runAsync(
     `INSERT INTO masks (id, name, profile_id, created_at)
      VALUES (?, ?, ?, ?)
      ON CONFLICT(name) DO UPDATE SET name = excluded.name`,
     [id, name, profileId, timestamp]
   );
+  console.log("upsertMask: Insert completed");
+
+  // Verify the mask was inserted
+  const verifyMask = await db.getFirstAsync<Mask>(
+    "SELECT * FROM masks WHERE id = ?",
+    [id]
+  );
+  console.log("upsertMask: Verification query result:", verifyMask);
 }
 
 async function getMasks(profileId: string): Promise<Mask[]> {
   const db = getDatabase();
-  return await db.getAllAsync<Mask>(
+  console.log("getMasks: Querying masks for profileId:", profileId);
+  const masks = await db.getAllAsync<Mask>(
     "SELECT * FROM masks WHERE profile_id = ?",
     [profileId]
   );
+  console.log("getMasks: Initial query result:", masks);
+
+  // If no masks exist, create a default "All" mask
+  if (masks.length === 0) {
+    console.log("getMasks: No masks found, creating default 'All' mask for profile:", profileId);
+    try {
+      await upsertMask("All", profileId);
+      console.log("getMasks: Default mask created successfully");
+
+      // Check all masks in the database
+      const allMasks = await db.getAllAsync<Mask>("SELECT * FROM masks");
+      console.log("getMasks: ALL masks in database:", allMasks);
+
+      const newMasks = await db.getAllAsync<Mask>(
+        "SELECT * FROM masks WHERE profile_id = ?",
+        [profileId]
+      );
+      console.log("getMasks: Fetched masks after creation with profileId filter:", newMasks);
+      return newMasks;
+    } catch (error) {
+      console.error("getMasks: Error creating default mask:", error);
+      return [];
+    }
+  }
+
+  return masks;
 }
 
 async function getMask(id: string): Promise<Mask | null> {

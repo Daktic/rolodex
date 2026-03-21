@@ -2,20 +2,31 @@ import { StyleSheet, View } from 'react-native';
 import KVBContainer, { KeyValuePair as KVPair } from '@/components/common/KVBContainer';
 import { useState, useEffect } from "react";
 import { getProfile, updateProfileDisplayName } from '@/services/storage';
+import {getProfileId} from "@/services/wallet";
 
-// TODO: Replace with actual profile ID from wallet/auth
-const PROFILE_ID = "temp-profile-id";
+
 
 export default function ProfileDisplayName() {
   const [displayNameField, setDisplayNameField] = useState<KVPair[]>([
     { id: 'display-name', key: 'Display Name', value: '' }
   ]);
-
-  // Load profile display name on mount
+  const [profileId, setProfileId] = useState<string | null>(null);
+  // Load profile ID on mount
   useEffect(() => {
+    const getPID = async () => {
+      const pID = await getProfileId();
+      setProfileId(pID);
+    }
+    getPID();
+  }, []);
+
+  // Load profile display name when profileId is available
+  useEffect(() => {
+    if (!profileId) return;
+
     const loadProfile = async () => {
       try {
-        const profile = await getProfile(PROFILE_ID);
+        const profile = await getProfile(profileId);
         console.log("Loaded profile:", JSON.stringify(profile, null, 2));
         if (profile) {
           console.log("Setting display name to:", profile.display_name);
@@ -31,16 +42,17 @@ export default function ProfileDisplayName() {
       }
     };
     loadProfile();
-  }, []);
+  }, [profileId]);
 
   const handleUpdate = async (id: string, key: string, value: string) => {
     // Update local state
     setDisplayNameField([{ id, key, value }]);
+    if (!profileId) return;
 
     // Save to storage
     try {
       console.log("Updating profile display name to:", value);
-      await updateProfileDisplayName(PROFILE_ID, value);
+      await updateProfileDisplayName(profileId, value);
       console.log("Profile updated successfully");
     } catch (error) {
       console.error("Failed to update display name:", error);
