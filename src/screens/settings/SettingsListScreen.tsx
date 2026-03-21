@@ -27,13 +27,12 @@ export default function SettingsListScreen() {
         }
     ];
 
-    const accountSettings: SettingsItem[] = [
+    const walletSettings: SettingsItem[] = [
         {
-            id: 'privateKey',
-            title: 'Private Key',
+            id: 'wallet',
+            title: 'Wallet',
             onPress: () => {
-                // TODO: Navigate to profile settings
-                console.log('Navigate to Profile settings');
+                navigation.navigate('Wallet');
             },
         }
     ];
@@ -55,7 +54,7 @@ export default function SettingsListScreen() {
             </View>
             <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
                 <SettingsListSection title="App Settings" items={appSettings} />
-                <SettingsListSection title="Wallet" items={accountSettings} />
+                <SettingsListSection title="Wallet" items={walletSettings} />
                 <SettingsListSection title="System" items={aboutSettings} />
             </ScrollView>
         </View>
