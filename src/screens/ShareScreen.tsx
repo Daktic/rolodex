@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { generatePayload } from '@/services/connection/exchange';
 import { PayloadV1 } from '@/types/exchange';
 import ConnectionStatus from '@/components/screens/share/ConnectionStatus';
+import NFCListener, { ConnectionState } from '@/components/screens/share/NFCListener';
+import { ConnectionSession } from '@/services/connection/handshake';
 import { useRoute } from '@react-navigation/native';
 import { QrCode } from "lucide-react-native";
 import QRDialog from '@/dialogs/QR';
@@ -12,6 +14,12 @@ export default function ShareScreen() {
     const { maskId } = route.params as { maskId: string };
     const [payload, setPayload] = useState<PayloadV1 | null>(null);
     const [qrDialogVisible, setQrDialogVisible] = useState(false);
+    const [connectionStatus, setConnectionStatus] = useState<ConnectionState>('idle');
+
+    const handleSessionReceived = (session: ConnectionSession) => {
+        console.log('Received session from remote device:', session);
+        // TODO: Complete handshake and exchange contact data
+    };
 
     // TODO: Replace with actual issuer and signMessage implementation
     const issuer = "placeholder-issuer";
@@ -29,6 +37,11 @@ export default function ShareScreen() {
 
     return (
         <View style={styles.container}>
+            <NFCListener
+                onStatusChange={setConnectionStatus}
+                onSessionReceived={handleSessionReceived}
+            />
+
             <View style={styles.connectMethodsContainer}>
                 <TouchableOpacity
                     style={styles.methodItem}
@@ -36,11 +49,6 @@ export default function ShareScreen() {
                 >
                     <QrCode />
                 </TouchableOpacity>
-                {/*This is hidden for now while we get core NFC connection and QR working*/}
-                {/*<View style={styles.methodItem}>*/}
-                {/*    <SquaresExclude />*/}
-                {/*    <Text style={styles.methodLabel}>Connect Via</Text>*/}
-                {/*</View>*/}
             </View>
 
             <QRDialog
@@ -52,7 +60,7 @@ export default function ShareScreen() {
             />
             <Text style={styles.title}>Share Contact</Text>
 
-            <ConnectionStatus />
+            <ConnectionStatus status={connectionStatus} />
 
             <Text style={styles.description}>
                 Tap phones to share contact info.{'\n'}
