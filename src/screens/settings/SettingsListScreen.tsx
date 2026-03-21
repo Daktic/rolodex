@@ -13,16 +13,14 @@ export default function SettingsListScreen() {
             id: 'notifications',
             title: 'Notifications',
             onPress: () => {
-                // TODO: Navigate to notifications settings
-                console.log('Navigate to Notifications settings');
+                navigation.navigate('Notifications');
             },
         },
         {
             id: 'appearance',
             title: 'Appearance',
             onPress: () => {
-                // TODO: Navigate to appearance settings
-                console.log('Navigate to Appearance settings');
+                navigation.navigate('Appearance');
             },
         }
     ];
