@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, ScrollView } from 'react-native';
+import { StyleSheet, ScrollView, Text } from 'react-native';
 import ProfileImage from '../components/screens/profile/ProfileImage';
 import ContactInfo from '../components/screens/profile/ContactInfo';
 import ProfileDisplayName from '../components/screens/profile/ProfileDisplayName';
@@ -21,13 +21,14 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      <Masks
+        <Text style={styles.title}>Profile</Text>
+        <Masks
         onMaskChange={setCurrentMask}
         onSharePress={handleSharePress}
-      />
-      <ProfileImage />
-      <ProfileDisplayName />
-      <ContactInfo currentMask={currentMask} />
+        />
+        <ProfileImage />
+        <ProfileDisplayName />
+        <ContactInfo currentMask={currentMask} />
     </ScrollView>
   );
 }
@@ -38,6 +39,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   contentContainer: {
+    paddingTop: 60,
+    paddingHorizontal: 16,
     paddingBottom: 100,
-  }
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    marginBottom: 24,
+  },
 });

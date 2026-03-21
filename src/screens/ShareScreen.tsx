@@ -8,6 +8,7 @@ import { ConnectionSession } from '@/services/connection/handshake';
 import { useRoute } from '@react-navigation/native';
 import { QrCode } from "lucide-react-native";
 import QRDialog from '@/dialogs/QR';
+import {getProfileId, signMessage} from "@/services/wallet";
 
 export default function ShareScreen() {
     const route = useRoute();
@@ -15,17 +16,18 @@ export default function ShareScreen() {
     const [payload, setPayload] = useState<PayloadV1 | null>(null);
     const [qrDialogVisible, setQrDialogVisible] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState<ConnectionState>('idle');
+    const [issuer, setIssuer] = useState<string | null>(null);
 
     const handleSessionReceived = (session: ConnectionSession) => {
         console.log('Received session from remote device:', session);
         // TODO: Complete handshake and exchange contact data
     };
 
-    // TODO: Replace with actual issuer and signMessage implementation
-    const issuer = "placeholder-issuer";
-    const signMessage = async (message: string) => {
-        return "placeholder-signature";
-    };
+    useEffect(() => {
+        getProfileId().then((id) => {
+            setIssuer(id);
+        }).catch((error) => console.error(error));
+    }, []);
 
     useEffect(() => {
         if (maskId) {
@@ -55,7 +57,7 @@ export default function ShareScreen() {
                 visible={qrDialogVisible}
                 onClose={() => setQrDialogVisible(false)}
                 maskId={maskId}
-                issuer={issuer}
+                issuer={issuer?? "Invalid"}
                 signMessage={signMessage}
             />
             <Text style={styles.title}>Share Contact</Text>

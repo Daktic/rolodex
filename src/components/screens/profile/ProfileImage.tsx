@@ -4,21 +4,33 @@ import * as ImagePicker from 'expo-image-picker';
 import { updateProfileAvatar, getProfile } from '@/services/storage';
 import {getProfileId} from "@/services/wallet";
 
-const PROFILE_ID = getProfileId();
 
-const updateProfileImage = async (imageUri: string) => {
-  await updateProfileAvatar(PROFILE_ID, imageUri);
+
+const updateProfileImage = async (profile_id: string ,imageUri: string) => {
+  await updateProfileAvatar(profile_id, imageUri);
 };
 
 export default function ProfileImage() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileID, setProfileID] = useState<string | null>(null);
 
   // Load profile image on mount
   useEffect(() => {
-    const loadProfileImage = async () => {
+    const loadProfileID = async () => {
       try {
-        console.log("Loading profile image for ID:", PROFILE_ID);
-        const profile = await getProfile(PROFILE_ID);
+        const id = await getProfileId();
+        setProfileID(id);
+        console.log("Loaded profile ID:", id);
+      } catch (error) {
+        console.error("Failed to load profile ID:", error);
+      }
+    };
+
+    const loadProfileImage = async () => {
+      if (!profileID) return;
+      try {
+        console.log("Loading profile image for ID:", profileID);
+        const profile = await getProfile(profileID);
         console.log("Profile loaded:", profile);
         if (profile?.avatar_uri) {
           console.log("Setting profile image to:", profile.avatar_uri);
@@ -30,6 +42,7 @@ export default function ProfileImage() {
         console.error("Failed to load profile image:", error);
       }
     };
+    loadProfileID();
     loadProfileImage();
   }, []);
 
@@ -54,8 +67,12 @@ export default function ProfileImage() {
       console.log("Image picked:", pic);
       setProfileImage(pic);
       console.log("Saving image to storage...");
-      await updateProfileImage(pic);
-      console.log("Image saved to storage");
+      if (!profileID) {
+        console.error("Profile ID is not set")
+      } else {
+        await updateProfileImage(profileID, pic);
+        console.log("Image saved to storage");
+      }
     }
   };
 
