@@ -13,7 +13,7 @@ const PrivateKeyContent = ({visible, setModalVisible}: {visible: boolean, setMod
 
     useEffect(() => {
         if (!visible) return;
-        SecureStore.getItemAsync('P').then(setPrivateKey);
+        SecureStore.getItemAsync('WALLET_PRIVATE_KEY').then(setPrivateKey).catch(console.error);
     }, [visible]);
 
     const handleCopy = async () => {
