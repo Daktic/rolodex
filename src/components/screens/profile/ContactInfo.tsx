@@ -5,8 +5,6 @@ import { getProfileFields, upsertProfileField, deleteProfileField, getMaskFields
 import { Mask } from '@/types/storage';
 import { getProfileId } from '@/services/wallet';
 
-const PROFILE_ID = getProfileId();
-
 interface ContactInfoProps {
   currentMask: Mask | null;
 }
@@ -14,12 +12,25 @@ interface ContactInfoProps {
 export default function ContactInfo({ currentMask }: ContactInfoProps) {
   const [fields, setFields] = useState<KeyValuePair[]>([]);
   const [maskedFieldIds, setMaskedFieldIds] = useState<Set<string>>(new Set());
+  const [profileId, setProfileId] = useState<string | null>(null);
 
-  // Load profile fields on mount
+
+  // Load profile ID on mount
   useEffect(() => {
+    const getPID = async () => {
+      const pID = await getProfileId();
+      setProfileId(pID);
+    }
+    getPID();
+  }, []);
+
+  // Load profile fields when profileId is available
+  useEffect(() => {
+    if (!profileId) return;
+
     const loadFields = async () => {
       try {
-        const profileFields = await getProfileFields(PROFILE_ID);
+        const profileFields = await getProfileFields(profileId);
         const mappedFields = profileFields.map(field => ({
           id: field.id,
           key: field.label,
@@ -31,7 +42,7 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
       }
     };
     loadFields();
-  }, []);
+  }, [profileId]);
 
   // Load masked fields when mask changes
   useEffect(() => {
@@ -59,10 +70,11 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
         field.id === id ? { ...field, key, value } : field
       )
     );
+    if (!profileId) return;
 
     // Save to storage
     try {
-      await upsertProfileField(id, PROFILE_ID, key, value, true);
+      await upsertProfileField(id, profileId, key, value, true);
     } catch (error) {
       console.error("Failed to update profile field:", error);
     }

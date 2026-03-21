@@ -6,7 +6,7 @@ import { getProfileId } from "@/services/wallet";
 import {Mask} from "@/types/storage";
 import Swipeable from "react-native-gesture-handler/Swipeable";
 
-const PROFILE_ID = getProfileId();
+
 
 interface MasksProps {
     onMaskChange?: (mask: Mask | null) => void;
@@ -19,17 +19,35 @@ export default function Masks({ onMaskChange, onSharePress }: MasksProps) {
     const [dropdownVisible, setDropdownVisible] = useState(false);
     const [dialogVisible, setDialogVisible] = useState(false);
     const [newMaskName, setNewMaskName] = useState("");
+    const [profileId, setProfileId] = useState<string | null>(null);
 
     useEffect(() => {
-        getMasks(PROFILE_ID).then(fetchedMasks => {
+        getProfileId().then(id => {
+            console.log("Masks: Got profile ID:", id);
+            setProfileId(id);
+        });
+    }, []);
+
+    useEffect(() => {
+        console.log("Masks: profileId changed to:", profileId);
+        if(!profileId) return;
+
+        console.log("Masks: Fetching masks for profile:", profileId);
+        getMasks(profileId).then(fetchedMasks => {
+            console.log("Masks: Fetched masks:", fetchedMasks);
             setMasks(fetchedMasks);
             if (fetchedMasks.length > 0) {
                 const firstMask = fetchedMasks[0];
+                console.log("Masks: Setting current mask to:", firstMask);
                 setCurrentMask(firstMask);
                 onMaskChange?.(firstMask);
+            } else {
+                console.log("Masks: No masks found!");
             }
+        }).catch(error => {
+            console.error("Masks: Error fetching masks:", error);
         });
-    }, []);
+    }, [profileId]);
 
     const handleMaskSelect = (mask: Mask) => {
         setCurrentMask(mask);
@@ -43,12 +61,16 @@ export default function Masks({ onMaskChange, onSharePress }: MasksProps) {
     };
 
     const handleCreateMask = () => {
+        if (!profileId) {
+            console.error("Profile ID is not available");
+            return;
+        };
         if (newMaskName.trim()) {
             console.log("Creating new mask:", newMaskName);
             setDialogVisible(false);
             setNewMaskName("");
-            upsertMask(newMaskName, PROFILE_ID).then(() => {
-                getMasks(PROFILE_ID).then(fetchedMasks => {
+            upsertMask(newMaskName, profileId).then(() => {
+                getMasks(profileId).then(fetchedMasks => {
                     setMasks(fetchedMasks);
                     // Find and set the newly created mask
                     const newMask = fetchedMasks.find(m => m.name === newMaskName);
@@ -67,10 +89,14 @@ export default function Masks({ onMaskChange, onSharePress }: MasksProps) {
             alert("You must have at least one mask.");
             return;
         }
+        if (!profileId) {
+            console.error("Profile ID is not available");
+            return;
+        };
         console.log("Deleting mask:", maskToDelete.name);
         setDropdownVisible(false);
         deleteMask(maskToDelete.name).then(() => {
-            getMasks(PROFILE_ID).then(fetchedMasks => {
+            getMasks(profileId).then(fetchedMasks => {
                 setMasks(fetchedMasks);
                 // Find and set the newly created mask
                 const newMask = fetchedMasks[fetchedMasks.length - 1];
@@ -95,7 +121,17 @@ export default function Masks({ onMaskChange, onSharePress }: MasksProps) {
         );
     };
 
-    if (!currentMask) return null; // or a loading spinner
+    if (!currentMask) {
+        // Show loading state while masks are being fetched
+        return (
+            <View style={styles.header}>
+                <Drama size={32} color="#000" style={styles.icon} />
+                <View style={styles.titleContainer}>
+                    <Text style={styles.title}>Loading...</Text>
+                </View>
+            </View>
+        );
+    }
 
     return (
         <>
@@ -211,7 +247,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingTop: 60,
         paddingHorizontal: 20,
-        paddingBottom: 20,
+        paddingBottom: 10,
     },
     icon: {
         marginRight: 12,

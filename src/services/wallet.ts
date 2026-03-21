@@ -31,6 +31,9 @@ const getOrCreateWallet = async () => {
  */
 const getProfileId = async () => {
     const wallet = await getOrCreateWallet();
+    console.log("getProfileId: wallet object:", wallet);
+    console.log("getProfileId: wallet.address:", wallet.address);
+    console.log("getProfileId: typeof wallet.address:", typeof wallet.address);
     return wallet.address;
 };
 

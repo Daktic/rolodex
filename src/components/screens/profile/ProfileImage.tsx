@@ -14,7 +14,7 @@ export default function ProfileImage() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [profileID, setProfileID] = useState<string | null>(null);
 
-  // Load profile image on mount
+  // Load profile ID on mount
   useEffect(() => {
     const loadProfileID = async () => {
       try {
@@ -25,9 +25,14 @@ export default function ProfileImage() {
         console.error("Failed to load profile ID:", error);
       }
     };
+    loadProfileID();
+  }, []);
+
+  // Load profile image when profileID is available
+  useEffect(() => {
+    if (!profileID) return;
 
     const loadProfileImage = async () => {
-      if (!profileID) return;
       try {
         console.log("Loading profile image for ID:", profileID);
         const profile = await getProfile(profileID);
@@ -42,9 +47,8 @@ export default function ProfileImage() {
         console.error("Failed to load profile image:", error);
       }
     };
-    loadProfileID();
     loadProfileImage();
-  }, []);
+  }, [profileID]);
 
   const pickImage = async () => {
     // Request permission
