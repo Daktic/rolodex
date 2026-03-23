@@ -57,7 +57,7 @@ const WalletScreen = () => {
 
 
     useEffect(() => {
-        setPublicKey(getProfileId())
+        getProfileId().then(setPublicKey).catch(console.error)
     },[])
 
     const handlePrivateKeyExposure = () => {

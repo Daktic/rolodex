@@ -2,28 +2,59 @@ import * as SecureStore from 'expo-secure-store';
 import { privateKeyToAccount } from 'viem/accounts';
 import { generatePrivateKey } from 'viem/accounts';
 
-const WALLET_PRIVATE_KEY = 'WALLET_PRIVATE_KEY';
+// In-memory cache to ensure wallet consistency during app session
+let cachedWallet: ReturnType<typeof privateKeyToAccount> | null = null;
+// Promise lock to prevent race conditions during initialization
+let initializationPromise: Promise<ReturnType<typeof privateKeyToAccount>> | null = null;
 
 /**
  * Generates a new wallet and stores the private key securely
  */
 const generateWallet = async () => {
     const privateKey = generatePrivateKey();
-    await SecureStore.setItemAsync(WALLET_PRIVATE_KEY, privateKey);
-    return privateKeyToAccount(privateKey);
+    await SecureStore.setItemAsync('WALLET_PRIVATE_KEY', privateKey);
+    cachedWallet = privateKeyToAccount(privateKey);
+    console.log("generateWallet: Created new wallet with address:", cachedWallet.address);
+    return cachedWallet;
 };
 
 /**
  * Retrieves the existing wallet or creates a new one if none exists
  */
 const getOrCreateWallet = async () => {
-    const existingKey = await SecureStore.getItemAsync(WALLET_PRIVATE_KEY);
-
-    if (existingKey) {
-        return privateKeyToAccount(existingKey as `0x${string}`);
+    // Return cached wallet if available
+    if (cachedWallet) {
+        console.log("getOrCreateWallet: Using cached wallet");
+        return cachedWallet;
     }
 
-    return generateWallet();
+    // If initialization is in progress, wait for it
+    if (initializationPromise) {
+        console.log("getOrCreateWallet: Waiting for initialization to complete");
+        return initializationPromise;
+    }
+
+    // Start initialization
+    initializationPromise = (async () => {
+        const existingKey = await SecureStore.getItemAsync('WALLET_PRIVATE_KEY');
+
+        if (existingKey) {
+            const account = privateKeyToAccount(existingKey as `0x${string}`);
+            console.log("getOrCreateWallet: Loaded existing wallet with address:", account.address);
+            cachedWallet = account;
+            return account;
+        }
+
+        return generateWallet();
+    })();
+
+    try {
+        const wallet = await initializationPromise;
+        return wallet;
+    } finally {
+        // Clear the initialization promise after completion
+        initializationPromise = null;
+    }
 };
 
 /**
