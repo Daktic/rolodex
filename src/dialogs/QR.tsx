@@ -32,7 +32,7 @@ export default function QRDialog({ visible, onClose, maskId, issuer, signMessage
                 })
                 .catch(error => console.error("Failed to generate QR protocol:", error));
         }
-    }, [visible, maskId, issuer, signMessage, showCamera]);
+    }, [visible, maskId, issuer, showCamera]);
 
     useEffect(() => {
         if (!visible) {
