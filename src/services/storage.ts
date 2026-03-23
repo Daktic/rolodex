@@ -49,7 +49,7 @@ const creationStatements: Record<string, string> = {
     CREATE TABLE IF NOT EXISTS connections (
       id TEXT PRIMARY KEY,
       connected_at INTEGER NOT NULL,
-      issuer TEXT NOT NULL,
+      issuer TEXT,
       display_name TEXT NOT NULL,
       avatar_uri TEXT,
       raw_payload TEXT NOT NULL
@@ -393,7 +393,7 @@ async function getMaskFields(maskId: string): Promise<ProfileField[]> {
 
 async function upsertConnection(
   id: string,
-  issuer: string,
+  issuer: string | null,
   displayName: string,
   rawPayload: string,
   avatarUri?: string | null,

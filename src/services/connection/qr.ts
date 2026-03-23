@@ -49,4 +49,49 @@ const processScannedQR = async (data: string): Promise<string | null> => {
   }
 };
 
-export { generateQR, processScannedQR };
+const parseExternalQRCode = (data: string) => {
+  const parseLinkedIn = async (data: string) => {
+    const userName = data.split('in/').pop()?.replace(/\/$/, '').trim();
+    console.log('LinkedIn username:', userName);
+
+    if (userName) {
+      try {
+        const connectionID = `linkedin-${userName}`;
+        await upsertConnection(
+            connectionID,
+            null,
+            userName,
+            JSON.stringify({
+              "display_name": userName,
+              "avatar_uri": `https://www.linkedin.com/in/${userName}/avatar/`,
+              "fields": [
+                {
+                  "label": "LinkedIn",
+                  "value": data
+                },
+              ]
+            })
+        )
+        await upsertConnectionField(
+            `${connectionID}-LinkedIn`,
+            connectionID,
+            "LinkedIn",
+            data
+        )
+        console.log('LinkedIn connection saved successfully!');
+        return connectionID;
+      } catch (error) {
+        console.error('Failed to save LinkedIn connection:', error);
+      }
+    }
+
+    return null;
+  }
+
+  if (data.includes('linkedin.com')) {
+    return parseLinkedIn(data);
+  }
+
+};
+
+export { generateQR, processScannedQR, parseExternalQRCode };

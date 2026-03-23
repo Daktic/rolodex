@@ -6,6 +6,7 @@ import type { ConnectionsStackParamList } from '@/navigation/ConnectionsStack';
 import { Connection, ConnectionField } from '@/types/storage';
 import { getAllConnections, getConnectionFields, deleteConnection } from '@/services/storage';
 import ConnectionContainer from '@/components/screens/connectionList/ConnectionContainer';
+import ConnectionListHeader from "@/components/screens/connectionList/ConnectionListHeader";
 
 
 interface ConnectionWithFields {
@@ -72,9 +73,7 @@ const ConnectionsListScreen = () => {
   if (connections.length === 0) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Connections</Text>
-        </View>
+        <ConnectionListHeader />
         <View style={styles.emptyContent}>
           <Text style={styles.emptyText}>No connections yet</Text>
           <Text style={styles.emptySubtext}>
@@ -87,9 +86,7 @@ const ConnectionsListScreen = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Connections</Text>
-      </View>
+      <ConnectionListHeader />
       <FlatList
         data={connections}
         keyExtractor={(item) => item.connection.id}
@@ -120,10 +117,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 20,
     backgroundColor: '#f5f5f5',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
   },
   listContent: {
     paddingBottom: 20,

@@ -1,5 +1,5 @@
 import { Drama, ChevronDown, Plus, Trash2, Share } from "lucide-react-native";
-import { StyleSheet, Text, View, TouchableOpacity, Modal, ScrollView, TextInput, Pressable, Animated } from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity, Modal, ScrollView, TextInput, Animated } from "react-native";
 import { useState, useEffect } from "react";
 import {deleteMask, getMasks, upsertMask} from "@/services/storage";
 import { getProfileId } from "@/services/wallet";

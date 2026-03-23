@@ -1,10 +1,12 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import ConnectionsListScreen from '../screens/ConnectionsListScreen';
 import ConnectionDetailScreen from '../screens/ConnectionDetailScreen';
+import ConnectViaScreen from "@/screens/ConnectViaScreen";
 
 export type ConnectionsStackParamList = {
   ConnectionsList: undefined;
   ConnectionDetail: { connectionId: string };
+  ConnectViaScreen: undefined;
 };
 
 const Stack = createNativeStackNavigator<ConnectionsStackParamList>();
@@ -25,6 +27,14 @@ export default function ConnectionsStack() {
           title: 'Connection',
         }}
       />
+     <Stack.Screen
+         name="ConnectViaScreen"
+         component={ConnectViaScreen}
+         options={{
+           headerShown: true,
+           title: 'Connect Via',
+         }}
+         />
     </Stack.Navigator>
   );
 }
