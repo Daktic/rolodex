@@ -50,36 +50,48 @@ const processScannedQR = async (data: string): Promise<string | null> => {
 };
 
 const parseExternalQRCode = (data: string) => {
+  const insertConnectionData = async (
+      {
+        connectionType,
+        userName,
+        url
+      }:
+      {
+        connectionType: string,
+        userName: string,
+        url: string
+      }
+  ) => {
+    const connectionID = `${connectionType}-${userName}`;
+    await upsertConnection(
+        connectionID,
+        null,
+        userName,
+        JSON.stringify({
+          "display_name": userName,
+          "fields": [
+            {
+              "label": connectionType,
+              "value": url
+            },
+          ]
+        })
+    )
+    await upsertConnectionField(
+        `${connectionID}-${connectionType}`,
+        connectionID,
+        connectionType,
+        url
+    )
+    return connectionID;
+  }
+
   const parseLinkedIn = async (data: string) => {
     const userName = data.split('in/').pop()?.replace(/\/$/, '').trim();
-    console.log('LinkedIn username:', userName);
 
     if (userName) {
       try {
-        const connectionID = `linkedin-${userName}`;
-        await upsertConnection(
-            connectionID,
-            null,
-            userName,
-            JSON.stringify({
-              "display_name": userName,
-              "avatar_uri": `https://www.linkedin.com/in/${userName}/avatar/`,
-              "fields": [
-                {
-                  "label": "LinkedIn",
-                  "value": data
-                },
-              ]
-            })
-        )
-        await upsertConnectionField(
-            `${connectionID}-LinkedIn`,
-            connectionID,
-            "LinkedIn",
-            data
-        )
-        console.log('LinkedIn connection saved successfully!');
-        return connectionID;
+        return await insertConnectionData({connectionType: "LinkedIn", userName, url: data})
       } catch (error) {
         console.error('Failed to save LinkedIn connection:', error);
       }
