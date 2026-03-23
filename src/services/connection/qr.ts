@@ -1,5 +1,5 @@
 import { generateConnectionProtocol } from '@/services/connection/exchange';
-import { upsertConnection, upsertConnectionField } from '@/services/storage';
+import {upsertAnnotation, upsertConnection, upsertConnectionField} from '@/services/storage';
 import { ExchangeV1 } from '@/types/exchange';
 
 const generateQR = (maskId: string) => {};
@@ -63,9 +63,11 @@ const parseExternalQRCode = (data: string) => {
       }
   ) => {
     const connectionID = `${connectionType}-${userName}`;
-    await upsertConnection(
+    const newId = `annotation-${Date.now()}`;
+    await upsertAnnotation(
+        newId,
         connectionID,
-        null,
+        "Social",
         userName,
         JSON.stringify({
           "display_name": userName,
@@ -100,8 +102,21 @@ const parseExternalQRCode = (data: string) => {
     return null;
   }
 
+  const parseTwitter = async (data: string) => {
+    const userName = data.split('/').pop()?.trim();
+    if (userName) {
+      try {
+        return await insertConnectionData({connectionType: "X", userName, url: data})
+      } catch (error) {
+        console.error('Failed to save Twitter connection:', error);
+      }
+    }
+  }
+
   if (data.includes('linkedin.com')) {
     return parseLinkedIn(data);
+  } else if (data.includes('twitter.com') || data.includes('x.com')) {
+    return parseTwitter(data);
   }
 
 };
