@@ -111,50 +111,35 @@ const parseExternalQRCode = (data: string) => {
       }
   }
 
-  const parseLinkedIn = async (url: string) => {
-    const userName = url.split('in/').pop()?.replace(/\/$/, '').trim();
-
-    if (userName) {
-      try {
-        return await insertConnectionData({connectionType: "LinkedIn", userName, url: url})
-      } catch (error) {
-        console.error('Failed to save LinkedIn connection:', error);
+  const simpleParser = async ({url, deliminator, source}: {url: string, deliminator: string, source: string}) => {
+    try {
+      const userName = url.split(deliminator).pop()?.replace(/\/$/, '').trim();
+      if (userName) {
+        try {
+          return await insertConnectionData({connectionType: source, userName, url: url})
+        } catch (error) {
+          console.error(`Failed to save ${source} connection:`, error);
+        }
       }
-    }
-
-    return null;
-  }
-
-  const parseTwitter = async (url: string) => {
-    const userName = url.split('/').pop()?.trim();
-    if (userName) {
-      try {
-        return await insertConnectionData({connectionType: "X", userName, url: url})
-      } catch (error) {
-        console.error('Failed to save Twitter connection:', error);
-      }
-    }
-  }
-
-  const parseTelegram = async (url: string) => {
-    const userName = url.split('/').pop()?.trim();
-    if (userName) {
-      try {
-        return await insertConnectionData({connectionType: "Telegram", userName, url: url})
-      } catch (error) {
-        console.error('Failed to save Telegram connection:', error);
-      }
+    } catch (error) {
+      console.error(`Failed to parse ${source} connection:`, error);
     }
   }
 
   const url = stripProtocol(data)
 
   if (url.includes('linkedin.com')) {
-    return parseLinkedIn(url);
+    return simpleParser({url, deliminator: "in/", source:"LinkedIn",});
   } else if (url.includes('twitter.com') || data.includes('x.com')) {
-    return parseTwitter(url);
+    return simpleParser({url, deliminator: "/", source:"X",});
   } else if (url.includes('t.me')) {
-    return parseTelegram(url);
+    return simpleParser({url, deliminator: "/", source: "Telegram",});
+  } else if (url.includes('github.com')) {
+    return simpleParser({url, deliminator: "/", source: "GitHub",});
+  } else if (url.includes('instagram.com')) {
+    return simpleParser({url, deliminator: "/", source: "Instagram",});
+  } else if (url.includes('warpcast.com')) {
+    return simpleParser({url, deliminator: "/", source: "Farcaster",});
   } else {
     return parseUnknown(url);
   }
