@@ -1,9 +1,16 @@
-import { generateConnectionProtocol } from '@/services/connection/exchange';
+import { uniqueNamesGenerator, adjectives, animals } from 'unique-names-generator';
 import {upsertAnnotation, upsertConnection, upsertConnectionField} from '@/services/storage';
 import { ExchangeV1 } from '@/types/exchange';
 import {stripProtocol} from "@/utils/parse";
 
-const generateQR = (maskId: string) => {};
+const genName = (seed?: string | number) => {
+  return uniqueNamesGenerator({
+    dictionaries: [adjectives, animals],
+    separator: '-',
+    style: 'lowerCase',
+    seed,
+  });
+}
 
 /**
  * Processes a scanned QR code and saves the connection to the database
@@ -93,6 +100,17 @@ const parseExternalQRCode = (data: string) => {
     return connectionID;
   }
 
+  const parseUnknown = async (url: string) => {
+    let userName = url.split('/').pop()?.trim();
+    // If we cant parse one, make one.
+    if (!userName) {userName = genName(url)}
+      try {
+        return await insertConnectionData({connectionType: "Unknown", userName, url: url})
+      } catch (error) {
+        console.error('Failed to save Unknown connection:', error);
+      }
+  }
+
   const parseLinkedIn = async (url: string) => {
     const userName = url.split('in/').pop()?.replace(/\/$/, '').trim();
 
@@ -137,8 +155,10 @@ const parseExternalQRCode = (data: string) => {
     return parseTwitter(url);
   } else if (url.includes('t.me')) {
     return parseTelegram(url);
+  } else {
+    return parseUnknown(url);
   }
 
 };
 
-export { generateQR, processScannedQR, parseExternalQRCode };
+export { processScannedQR, parseExternalQRCode };

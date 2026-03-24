@@ -10,7 +10,6 @@ export const ConnectionListHeader = () => {
 
 
     const handleConnectPress = () => {
-        console.log("Connect button pressed", {showCamera});
         setShowCamera(!showCamera)
     };
 
