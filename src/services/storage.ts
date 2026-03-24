@@ -21,7 +21,7 @@ const creationStatements: Record<string, string> = {
       label TEXT NOT NULL,
       value TEXT NOT NULL,
       share_by_default INTEGER NOT NULL,
-      FOREIGN KEY (profile_id) REFERENCES profile(id)
+      FOREIGN KEY (profile_id) REFERENCES profile(id) ON DELETE CASCADE
     )
   `,
 
@@ -31,7 +31,7 @@ const creationStatements: Record<string, string> = {
       name TEXT NOT NULL UNIQUE,
       profile_id TEXT NOT NULL,
       created_at INTEGER NOT NULL,
-      FOREIGN KEY (profile_id) REFERENCES profile(id)
+      FOREIGN KEY (profile_id) REFERENCES profile(id) ON DELETE CASCADE
     )
   `,
 
@@ -41,7 +41,7 @@ const creationStatements: Record<string, string> = {
       profile_field_id TEXT NOT NULL,
       PRIMARY KEY (mask_id, profile_field_id),
       FOREIGN KEY (mask_id) REFERENCES masks(id),
-      FOREIGN KEY (profile_field_id) REFERENCES profile_fields(id)
+      FOREIGN KEY (profile_field_id) REFERENCES profile_fields(id) ON DELETE CASCADE
     )
   `,
 
@@ -49,7 +49,7 @@ const creationStatements: Record<string, string> = {
     CREATE TABLE IF NOT EXISTS connections (
       id TEXT PRIMARY KEY,
       connected_at INTEGER NOT NULL,
-      issuer TEXT NOT NULL,
+      issuer TEXT,
       display_name TEXT NOT NULL,
       avatar_uri TEXT,
       raw_payload TEXT NOT NULL
@@ -62,7 +62,7 @@ const creationStatements: Record<string, string> = {
       connection_id TEXT NOT NULL,
       label TEXT NOT NULL,
       value TEXT NOT NULL,
-      FOREIGN KEY (connection_id) REFERENCES connections(id)
+      FOREIGN KEY (connection_id) REFERENCES connections(id) ON DELETE CASCADE
     )
   `,
   
@@ -74,7 +74,7 @@ const creationStatements: Record<string, string> = {
       label TEXT NOT NULL,
       value TEXT NOT NULL,
       created_at INTEGER NOT NULL,
-      FOREIGN KEY (connection_id) REFERENCES connections(id)
+      FOREIGN KEY (connection_id) REFERENCES connections(id) ON DELETE CASCADE
     )
   `
 };
@@ -393,7 +393,7 @@ async function getMaskFields(maskId: string): Promise<ProfileField[]> {
 
 async function upsertConnection(
   id: string,
-  issuer: string,
+  issuer: string | null,
   displayName: string,
   rawPayload: string,
   avatarUri?: string | null,

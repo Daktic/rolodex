@@ -10,6 +10,40 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ConnectionsStackParamList } from '@/navigation/ConnectionsStack';
 
+
+interface QRScannerProps {
+    onClose: () => void;
+    setShowCamera: (show: boolean) => void;
+}
+const QRScanner = ({onClose, setShowCamera}: QRScannerProps) => {
+    const navigation = useNavigation<NativeStackNavigationProp<ConnectionsStackParamList>>();
+
+    const handleQRScanned = async ({ data }: { data: string }) => {
+        const connectionId = await processScannedQR(data);
+
+        if (connectionId) {
+            setShowCamera(false);
+            onClose();
+            // Navigate to the connection detail screen
+            navigation.navigate('ConnectionDetail', { connectionId });
+        }
+    };
+
+    return (
+        <CameraView
+            style={styles.camera}
+            facing="back"
+            onBarcodeScanned={handleQRScanned}
+            barcodeScannerSettings={{
+                barcodeTypes: ['qr'],
+            }}
+            zoom={0.15}
+        />
+    )
+}
+
+export {QRScanner};
+
 interface QRDialogProps {
     visible: boolean;
     onClose: () => void;
@@ -22,7 +56,6 @@ export default function QRDialog({ visible, onClose, maskId, issuer, signMessage
     const [qrData, setQrData] = useState<string>('');
     const [showCamera, setShowCamera] = useState(false);
     const [permission, requestPermission] = useCameraPermissions();
-    const navigation = useNavigation<NativeStackNavigationProp<ConnectionsStackParamList>>();
 
     useEffect(() => {
         if (visible && maskId && !showCamera) {
@@ -50,17 +83,6 @@ export default function QRDialog({ visible, onClose, maskId, issuer, signMessage
         setShowCamera(true);
     };
 
-    const handleQRScanned = async ({ data }: { data: string }) => {
-        const connectionId = await processScannedQR(data);
-
-        if (connectionId) {
-            setShowCamera(false);
-            onClose();
-            // Navigate to the connection detail screen
-            navigation.navigate('ConnectionDetail', { connectionId });
-        }
-    };
-
     return (
         <Modal
             visible={visible}
@@ -86,14 +108,7 @@ export default function QRDialog({ visible, onClose, maskId, issuer, signMessage
                     </TouchableOpacity>
                     <View style={styles.qrContainer}>
                         {showCamera ? (
-                            <CameraView
-                                style={styles.camera}
-                                facing="back"
-                                onBarcodeScanned={handleQRScanned}
-                                barcodeScannerSettings={{
-                                    barcodeTypes: ['qr'],
-                                }}
-                            />
+                            <QRScanner setShowCamera={setShowCamera} onClose={onClose}/>
                         ) : (
                             qrData && (
                                 <QRCode

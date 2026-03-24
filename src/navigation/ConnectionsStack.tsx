@@ -5,6 +5,7 @@ import ConnectionDetailScreen from '../screens/ConnectionDetailScreen';
 export type ConnectionsStackParamList = {
   ConnectionsList: undefined;
   ConnectionDetail: { connectionId: string };
+  ConnectViaScreen: undefined;
 };
 
 const Stack = createNativeStackNavigator<ConnectionsStackParamList>();
