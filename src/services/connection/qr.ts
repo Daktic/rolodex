@@ -44,8 +44,12 @@ const processScannedQR = async (data: string): Promise<string | null> => {
 
     console.log('Connection saved successfully!');
     return connectionId;
-  } catch (error) {
-    console.error('Failed to process QR code:', error);
+  } catch {
+    try {
+      return await parseExternalQRCode(data) ?? null;
+    } catch (error) {
+      console.error('Failed to process QR code:', error);
+    }
     return null;
   }
 };
@@ -79,7 +83,6 @@ const parseExternalQRCode = (data: string) => {
         })
     )
     const annotationID = `annotation-${connectionType}-${userName}`;
-    console.log("annotationID", annotationID);
     await upsertAnnotation(
         annotationID,
         connectionID,
