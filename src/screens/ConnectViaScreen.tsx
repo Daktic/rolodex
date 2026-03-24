@@ -1,4 +1,4 @@
-import {Button, Linking, StyleSheet, Text, TouchableOpacity, View} from "react-native";
+import {Linking, StyleSheet, Text, TouchableOpacity, View} from "react-native";
 import {useState} from "react";
 import {CameraView, useCameraPermissions} from "expo-camera";
 import {Camera} from "lucide-react-native";
@@ -11,18 +11,27 @@ const CameraScan = (
     {show, setShow}:{show:boolean, setShow: (value: boolean) => void
     }) => {
 
+    const [scannedCode, setScannedCode] = useState<string | null>(null);
+
     const navigation = useNavigation<NativeStackNavigationProp<ConnectionsStackParamList>>();
 
 
     const handleQRScanned = async ({data}: { data: string }) => {
+        if (scannedCode === data) return;
+        setScannedCode(data);
         const connectionID = await parseExternalQRCode(data);
         console.log({connectionID});
         if (connectionID) {
             setShow(false);
             navigation.navigate('ConnectionDetail', { connectionId: connectionID });
-            Linking.openURL(data);
+            const canOpen = await Linking.canOpenURL(data);
+            if (canOpen) {
+                await Linking.openURL(data);
+            }
+            setScannedCode(null);
         } else {
             console.log("Invalid QR code");
+            setScannedCode(null);
         }
     }
     return (
@@ -30,7 +39,7 @@ const CameraScan = (
             {show ? <CameraView
                 style={styles.camera}
                 facing="back"
-                onBarcodeScanned={handleQRScanned}
+                onBarcodeScanned={scannedCode ? undefined : handleQRScanned}
                 barcodeScannerSettings={{
                     barcodeTypes: ['qr'],
                 }}

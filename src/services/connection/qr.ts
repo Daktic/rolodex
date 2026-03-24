@@ -1,6 +1,7 @@
 import { generateConnectionProtocol } from '@/services/connection/exchange';
 import {upsertAnnotation, upsertConnection, upsertConnectionField} from '@/services/storage';
 import { ExchangeV1 } from '@/types/exchange';
+import {stripProtocol} from "@/utils/parse";
 
 const generateQR = (maskId: string) => {};
 
@@ -63,11 +64,9 @@ const parseExternalQRCode = (data: string) => {
       }
   ) => {
     const connectionID = `${connectionType}-${userName}`;
-    const newId = `annotation-${Date.now()}`;
-    await upsertAnnotation(
-        newId,
+    await upsertConnection(
         connectionID,
-        "Social",
+        null,
         userName,
         JSON.stringify({
           "display_name": userName,
@@ -79,21 +78,24 @@ const parseExternalQRCode = (data: string) => {
           ]
         })
     )
-    await upsertConnectionField(
-        `${connectionID}-${connectionType}`,
+    const annotationID = `annotation-${connectionType}-${userName}`;
+    console.log("annotationID", annotationID);
+    await upsertAnnotation(
+        annotationID,
         connectionID,
+        "Social",
         connectionType,
         url
     )
     return connectionID;
   }
 
-  const parseLinkedIn = async (data: string) => {
-    const userName = data.split('in/').pop()?.replace(/\/$/, '').trim();
+  const parseLinkedIn = async (url: string) => {
+    const userName = url.split('in/').pop()?.replace(/\/$/, '').trim();
 
     if (userName) {
       try {
-        return await insertConnectionData({connectionType: "LinkedIn", userName, url: data})
+        return await insertConnectionData({connectionType: "LinkedIn", userName, url: url})
       } catch (error) {
         console.error('Failed to save LinkedIn connection:', error);
       }
@@ -102,21 +104,36 @@ const parseExternalQRCode = (data: string) => {
     return null;
   }
 
-  const parseTwitter = async (data: string) => {
-    const userName = data.split('/').pop()?.trim();
+  const parseTwitter = async (url: string) => {
+    const userName = url.split('/').pop()?.trim();
     if (userName) {
       try {
-        return await insertConnectionData({connectionType: "X", userName, url: data})
+        return await insertConnectionData({connectionType: "X", userName, url: url})
       } catch (error) {
         console.error('Failed to save Twitter connection:', error);
       }
     }
   }
 
-  if (data.includes('linkedin.com')) {
-    return parseLinkedIn(data);
-  } else if (data.includes('twitter.com') || data.includes('x.com')) {
-    return parseTwitter(data);
+  const parseTelegram = async (url: string) => {
+    const userName = url.split('/').pop()?.trim();
+    if (userName) {
+      try {
+        return await insertConnectionData({connectionType: "Telegram", userName, url: url})
+      } catch (error) {
+        console.error('Failed to save Telegram connection:', error);
+      }
+    }
+  }
+
+  const url = stripProtocol(data)
+
+  if (url.includes('linkedin.com')) {
+    return parseLinkedIn(url);
+  } else if (url.includes('twitter.com') || data.includes('x.com')) {
+    return parseTwitter(url);
+  } else if (url.includes('t.me')) {
+    return parseTelegram(url);
   }
 
 };
