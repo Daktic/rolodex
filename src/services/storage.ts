@@ -216,11 +216,11 @@ async function getMasks(profileId: string): Promise<Mask[]> {
   );
   console.log("getMasks: Initial query result:", masks);
 
-  // If no masks exist, create a default "All" mask
+  // If no masks exist, create a default "Default" mask
   if (masks.length === 0) {
-    console.log("getMasks: No masks found, creating default 'All' mask for profile:", profileId);
+    console.log("getMasks: No masks found, creating default 'Default' mask for profile:", profileId);
     try {
-      await upsertMask("All", profileId);
+      await upsertMask("Default", profileId);
       console.log("getMasks: Default mask created successfully");
 
       // Check all masks in the database
