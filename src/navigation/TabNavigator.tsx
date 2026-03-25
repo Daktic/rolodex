@@ -1,12 +1,14 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
+import { IdCard, Users, Settings, Tags } from "lucide-react-native";
 import ProfileStack from './ProfileStack';
 import ConnectionsStack from './ConnectionsStack';
 import SettingsStack from './SettingsStack';
+import SemanticsStack from "@/navigation/SemanticsStack";
 
 export type TabParamList = {
   ProfileTab: undefined;
   ConnectionsTab: undefined;
+  SemanticsTab: undefined;
   SettingsTab: undefined;
 };
 
@@ -40,7 +42,7 @@ export default function TabNavigator() {
         options={{
           tabBarLabel: 'Profile',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" color={color} size={size} />
+            <IdCard color={color} size={size} />
           ),
         }}
       />
@@ -50,17 +52,27 @@ export default function TabNavigator() {
         options={{
           tabBarLabel: 'Connections',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people" color={color} size={size} />
+            <Users color={color} size={size} />
           ),
         }}
       />
+        <Tab.Screen
+            name="SemanticsTab"
+            component={SemanticsStack}
+            options={{
+                tabBarLabel: 'Semantics',
+                tabBarIcon: ({ color, size }) => (
+                    <Tags color={color} size={size} />
+                ),
+            }}
+        />
       <Tab.Screen
         name="SettingsTab"
         component={SettingsStack}
         options={{
           tabBarLabel: 'Settings',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings" color={color} size={size} />
+            <Settings color={color} size={size} />
           ),
         }}
       />
