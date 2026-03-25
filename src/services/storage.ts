@@ -425,13 +425,13 @@ async function upsertAnnotation(
   const db = getDatabase();
   const timestamp = createdAt || Date.now();
   await db.withTransactionAsync(async () => {
-    const predicateID = await upsertPredicate(label);
     const typeID = await upsertNodeType(type);
+    const predicateID = await upsertPredicate(label);
     const nodeID = await upsertNode(value);
 
     await db.runAsync(
         `INSERT INTO annotations (connection_id, node_type_id, predicate_id, node_id, created_at)
-     VALUES (?, ?, ?, ?, ?, ?)
+     VALUES (?, ?, ?, ?, ?)
      ON CONFLICT(connection_id, node_type_id, predicate_id, node_id) DO UPDATE SET
        node_type_id = excluded.node_type_id,
        predicate_id = excluded.predicate_id,

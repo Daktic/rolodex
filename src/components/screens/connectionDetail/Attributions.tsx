@@ -204,7 +204,7 @@ export default function Attributions({ connectionId }: AttributionsProps) {
   return (
     <View style={styles.container}>
       {items.map((item) => (
-        <AttributionItemComponent key={item.id} item={item} />
+        <AttributionItemComponent key={`${item.isLocked ? 'field' : 'annotation'}-${item.id}`} item={item} />
       ))}
 
       <TouchableOpacity style={styles.addButton} onPress={() => setShowAddDialog(true)}>
