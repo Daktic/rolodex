@@ -70,17 +70,25 @@ export interface Connection {
 }
 
 export interface ConnectionField {
-  id: string;
-  connection_id: string;
-  predicate_id: number;
+  id: number;
+  label: string;
+  value: string;
   node_id: number;
 }
 
 export interface Annotation {
-  id: string;
-  connection_id: string;
-  node_type_id: string;
+  id: number;
+  connection_id: number;
+  node_type_id: number;
   predicate_id: number;
   node_id: number;
+  created_at: number;
+}
+
+export interface AnnotationField {
+  id: number;
+  type: string;
+  label: string;
+  value: string;
   created_at: number;
 }

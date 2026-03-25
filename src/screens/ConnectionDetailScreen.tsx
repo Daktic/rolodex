@@ -3,7 +3,7 @@ import { StyleSheet, ScrollView, View, Text, Image } from 'react-native';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { ConnectionsStackParamList } from '@/navigation/ConnectionsStack';
 import { getConnection } from '@/services/storage';
-import { Connection } from '@/types/storage';
+import { Connection } from '@/types/db';
 import Attributions from '@/components/screens/connectionDetail/Attributions';
 import Loading from '@/components/common/Loading';
 

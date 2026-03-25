@@ -2,10 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { StyleSheet, View, TouchableOpacity, Text, Modal, TextInput, Alert, Animated, Pressable } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { getConnectionFields, getAnnotations, upsertAnnotation, deleteAnnotation } from '@/services/storage';
-import { ConnectionField, Annotation } from '@/types/storage';
+import {AnnotationField} from "@/types/db";
 
 interface AttributionItem {
-  id: string;
+  id: number;
   label: string;
   value: string;
   isLocked: boolean; // true for connection fields, false for annotations
@@ -13,12 +13,12 @@ interface AttributionItem {
 }
 
 interface AttributionsProps {
-  connectionId: string;
+  connectionId: number;
 }
 
 export default function Attributions({ connectionId }: AttributionsProps) {
   const [items, setItems] = useState<AttributionItem[]>([]);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [newLabel, setNewLabel] = useState('');
   const [newValue, setNewValue] = useState('');
@@ -47,6 +47,7 @@ export default function Attributions({ connectionId }: AttributionsProps) {
         value: annotation.value,
         isLocked: false,
         type: annotation.type,
+        created_at: annotation.created_at,
       }));
 
       // Combine: locked fields first, then annotations
@@ -56,24 +57,24 @@ export default function Attributions({ connectionId }: AttributionsProps) {
     }
   };
 
-  const handleLongPress = (id: string, isLocked: boolean) => {
+  const handleLongPress = (id: number, isLocked: boolean) => {
     if (isLocked) return; // Can't edit locked fields
     setEditingId(editingId === id ? null : id);
   };
 
-  const handleUpdate = async (id: string, label: string, value: string) => {
+  const handleUpdate = async (id: number, label: string, value: string) => {
     try {
       const item = items.find((i) => i.id === id);
       if (!item || item.isLocked) return;
 
-      await upsertAnnotation(id, connectionId, item.type || 'general', label, value);
+      await upsertAnnotation(connectionId, item.type || 'general', label, value);
       await loadAttributions();
     } catch (error) {
       console.error('Failed to update annotation:', error);
     }
   };
 
-  const handleDelete = (id: string, label: string) => {
+  const handleDelete = (id: number, label: string) => {
     Alert.alert(
       'Delete Annotation',
       `Are you sure you want to delete "${label}"?`,
@@ -102,8 +103,7 @@ export default function Attributions({ connectionId }: AttributionsProps) {
     if (!newLabel.trim() || !newValue.trim()) return;
 
     try {
-      const newId = `annotation-${Date.now()}`;
-      await upsertAnnotation(newId, connectionId, newType, newLabel, newValue);
+      await upsertAnnotation(connectionId, newType, newLabel, newValue);
       await loadAttributions();
       setShowAddDialog(false);
       setNewLabel('');

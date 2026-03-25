@@ -3,7 +3,7 @@ import { Modal, View, StyleSheet, TouchableOpacity } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { generateConnectionProtocol } from '@/services/connection/exchange';
 import { processScannedQR } from '@/services/connection/qr';
-import { useEffect, useState } from 'react';
+import {useEffect, useRef, useState} from 'react';
 import { ExchangeV1 } from '@/types/exchange';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useNavigation } from '@react-navigation/native';
@@ -16,16 +16,24 @@ interface QRScannerProps {
     setShowCamera: (show: boolean) => void;
 }
 const QRScanner = ({onClose, setShowCamera}: QRScannerProps) => {
+    // Needed to gate the continuous QR calls.
+    const isQRProcessing = useRef(false);
+
     const navigation = useNavigation<NativeStackNavigationProp<ConnectionsStackParamList>>();
 
     const handleQRScanned = async ({ data }: { data: string }) => {
+        if (isQRProcessing.current) return;  // gate
+        isQRProcessing.current = true;
+
         const connectionId = await processScannedQR(data);
+
+        console.log("QR Scanned:", connectionId);
 
         if (connectionId) {
             setShowCamera(false);
             onClose();
             // Navigate to the connection detail screen
-            navigation.navigate('ConnectionDetail', { connectionId });
+            navigation.navigate('ConnectionDetail', { connectionId: connectionId });
         }
     };
 

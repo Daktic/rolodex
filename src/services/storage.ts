@@ -1,4 +1,12 @@
-import {Profile, ProfileField, Mask, Connection, ConnectionField, Annotation, ProfileFields} from "@/types/db";
+import {
+  Profile,
+  ProfileField,
+  Mask,
+  Connection,
+  ConnectionField,
+  ProfileFields,
+  AnnotationField
+} from "@/types/db";
 import {getDatabase} from "@/services/db";
 
 
@@ -338,7 +346,7 @@ async function upsertConnection(
   return row.lastInsertRowId
 }
 
-async function getConnection(id: string): Promise<Connection | null> {
+async function getConnection(id: number): Promise<Connection | null> {
   const db = getDatabase();
   return await db.getFirstAsync<Connection>(
     "SELECT * FROM connections WHERE id = ?",
@@ -351,7 +359,7 @@ async function getAllConnections(): Promise<Connection[]> {
   return await db.getAllAsync<Connection>("SELECT * FROM connections ORDER BY connected_at DESC");
 }
 
-async function deleteConnection(id: string): Promise<void> {
+async function deleteConnection(id: number): Promise<void> {
   const db = getDatabase();
   await db.runAsync("DELETE FROM connections WHERE id = ?", [id]);
 }
@@ -381,7 +389,7 @@ async function upsertConnectionField(
   })
 }
 
-async function getConnectionFields(connectionId: string): Promise<ConnectionField[]> {
+async function getConnectionFields(connectionId: number): Promise<ConnectionField[]> {
   const db = getDatabase();
   return await db.getAllAsync<ConnectionField>(
     `SELECT 
@@ -398,7 +406,7 @@ async function getConnectionFields(connectionId: string): Promise<ConnectionFiel
 }
 
 // I don't think we should allow this, but unsure
-async function deleteConnectionField(id: string): Promise<void> {
+async function deleteConnectionField(id: number): Promise<void> {
   const db = getDatabase();
   await db.runAsync("DELETE FROM connection_fields WHERE id = ?", [id]);
 }
@@ -434,9 +442,9 @@ async function upsertAnnotation(
 
 }
 
-async function getAnnotations(connectionId: string): Promise<Annotation[]> {
+async function getAnnotations(connectionId: number): Promise<AnnotationField[]> {
   const db = getDatabase();
-  return await db.getAllAsync<Annotation>(
+  return await db.getAllAsync<AnnotationField>(
     `SELECT 
                 annotations.id,
                 node_types.label AS type,
@@ -454,7 +462,7 @@ async function getAnnotations(connectionId: string): Promise<Annotation[]> {
   );
 }
 
-async function deleteAnnotation(id: string): Promise<void> {
+async function deleteAnnotation(id: number): Promise<void> {
   const db = getDatabase();
   await db.runAsync("DELETE FROM annotations WHERE id = ?", [id]);
 }
