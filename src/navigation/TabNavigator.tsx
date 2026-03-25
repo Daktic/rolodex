@@ -25,7 +25,7 @@ export default function TabNavigator() {
           backgroundColor: '#FFFFFF',
           borderTopWidth: 1,
           borderTopColor: '#E0E0E0',
-          height: 60,
+          height: 80,
           paddingBottom: 8,
           paddingTop: 8,
         },
