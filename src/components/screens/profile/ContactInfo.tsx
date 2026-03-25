@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import KVBContainer, { KeyValuePair } from '../../common/KVBContainer';
 import { getProfileFields, upsertProfileField, deleteProfileField, getMaskFields } from '@/services/storage';
-import { Mask } from '@/types/storage';
+import { Mask } from '@/types/db';
 import { getProfileId } from '@/services/wallet';
 
 interface ContactInfoProps {
@@ -11,7 +11,7 @@ interface ContactInfoProps {
 
 export default function ContactInfo({ currentMask }: ContactInfoProps) {
   const [fields, setFields] = useState<KeyValuePair[]>([]);
-  const [maskedFieldIds, setMaskedFieldIds] = useState<Set<string>>(new Set());
+  const [maskedFieldIds, setMaskedFieldIds] = useState<Set<number>>(new Set());
   const [profileId, setProfileId] = useState<string | null>(null);
 
 
@@ -63,24 +63,26 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
     loadMaskedFields();
   }, [currentMask]);
 
-  const handleUpdate = async (id: string, key: string, value: string) => {
+  const handleUpdate = async (id: number, key: string, value: string) => {
     // Update local state
     setFields((prev) =>
       prev.map((field) =>
         field.id === id ? { ...field, key, value } : field
       )
     );
-    if (!profileId) return;
+  };
 
+  const handleSave = async (id: number, key: string, value: string) => {
     // Save to storage
+    if (!profileId || !key.trim() || !value.trim()) return;
     try {
-      await upsertProfileField(id, profileId, key, value, true);
+      await upsertProfileField(profileId, key, value, true);
     } catch (error) {
       console.error("Failed to update profile field:", error);
     }
-  };
+  }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     // Update local state
     setFields((prev) => prev.filter((field) => field.id !== id));
 
@@ -93,7 +95,7 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
   };
 
   const handleAdd = () => {
-    const newId = String(Date.now());
+    const newId = Date.now();
     setFields((prev) => [
       ...prev,
       { id: newId, key: '', value: '' },
@@ -101,7 +103,7 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
     // Note: Field will be saved when user types (via handleUpdate)
   };
 
-  const handleMaskToggle = (fieldId: string, isMasked: boolean) => {
+  const handleMaskToggle = (fieldId: number, isMasked: boolean) => {
     if (!currentMask) return;
 
     setMaskedFieldIds(prev => {
@@ -123,6 +125,7 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
         onUpdate={handleUpdate}
         onDelete={handleDelete}
         onAdd={handleAdd}
+        onBlur={handleSave}
         showAddButton={true}
         currentMask={currentMask}
         maskedFieldIds={maskedFieldIds}

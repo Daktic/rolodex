@@ -60,7 +60,7 @@ Custom React hooks encapsulate domain logic:
 Pure TypeScript modules (no React dependencies):
 - `crypto.ts`  Keypair generation, signing, verification
 - `exchange.ts`  Payload encoding/decoding, exchange coordination
-- `storage.ts`  SQLite queries and schema management
+- `db.ts`  SQLite queries and schema management
 - `validation.ts`  Payload validation, schema checks
 
 ---
@@ -196,7 +196,7 @@ CREATE TABLE annotations (
 ```
 
 **Storage abstraction**
-All database operations are encapsulated in `storage.ts`. The application layer never writes raw SQL.
+All database operations are encapsulated in `db.ts`. The application layer never writes raw SQL.
 
 **Design Principles**
 - Domain-specific functions over generic CRUD for type safety and clarity
@@ -229,7 +229,7 @@ All database operations are encapsulated in `storage.ts`. The application layer 
 5. Exchange flow coordinates with other device
 6. Received payload is verified (`crypto.ts`)
 7. If payload contains avatar, decode base64 and save to filesystem
-8. Connection stored in SQLite with avatar file path (`storage.ts`)
+8. Connection stored in SQLite with avatar file path (`db.ts`)
 9. UI updates to show new connection
 
 **Annotation**

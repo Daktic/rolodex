@@ -1,4 +1,4 @@
-import type { Profile, ProfileField, Mask, Connection, ConnectionField, Annotation } from "@/types/storage";
+import {Profile, ProfileField, Mask, Connection, ConnectionField, Annotation, ProfileFields} from "@/types/db";
 import {getDatabase} from "@/services/db";
 
 
@@ -94,7 +94,7 @@ async function upsertNodeType(label: string, icon?: string) {
   const row = await db.runAsync(
     `INSERT INTO node_types (label, icon)
      VALUES (?, ?)
-     ON CONFLICT(label) DO NOTHING`,
+     ON CONFLICT(label) DO UPDATE SET label = excluded.label`,
     [label, icon?? null]
   );
 
@@ -103,13 +103,14 @@ async function upsertNodeType(label: string, icon?: string) {
 
 async function upsertNode(label: string, type?: string, value?: string) {
   const db = getDatabase();
-  if (type) await upsertNodeType(type);
+  let typeID: number | null = null;
+  if (type) typeID = await upsertNodeType(type);
 
   const row = await db.runAsync(
-    `INSERT INTO nodes (label, type, value)
+    `INSERT INTO nodes (label, type_id, value)
      VALUES (?, ?, ?)
-     ON CONFLICT(label) DO NOTHING`,
-    [label, type?? null, value?? null]
+     ON CONFLICT(label, type_id, value) DO UPDATE SET label = excluded.label`,
+    [label, typeID, value?? null]
   );
 
   return row.lastInsertRowId;
@@ -119,7 +120,7 @@ async function upsertTipple(subjectID: number, predicateID: number, objectID: nu
   const db = getDatabase();
   const timestamp = createdAt || Date.now();
   const row = await db.runAsync(
-    `INSERT INTO tipple (subject_id, predicate_id, object_id, created_at)
+    `INSERT INTO tipples (subject_id, predicate_id, object_id, created_at)
      VALUES (?, ?, ?, ?)
      ON CONFLICT(subject_id, predicate_id, object_id) DO NOTHING`,
     [subjectID, predicateID, objectID, timestamp]
@@ -133,7 +134,6 @@ async function upsertTipple(subjectID: number, predicateID: number, objectID: nu
 // ============================================================================
 
 async function upsertProfileField(
-  id: string,
   profileId: string,
   label: string,
   value: string,
@@ -143,21 +143,23 @@ async function upsertProfileField(
   await db.withTransactionAsync(async () => {
     const predicateID = await upsertPredicate(label);
     const nodeID = await upsertNode(value);
+    console.log("upsertProfileField ids:", { profileId, predicateID, nodeID });
+
     await db.runAsync(
-      `INSERT INTO profile_fields (id, profile_id, predicate_id, node_id, share_by_default)
-       VALUES (?, ?, ?, ?, ?)
-       ON CONFLICT(id) DO UPDATE SET
+      `INSERT INTO profile_fields (profile_id, predicate_id, node_id, share_by_default)
+       VALUES (?, ?, ?, ?)
+         ON CONFLICT(profile_id, predicate_id, node_id) DO UPDATE SET
          predicate_id = excluded.predicate_id,
          node_id = excluded.node_id,
          share_by_default = excluded.share_by_default`,
-      [id, profileId, predicateID, nodeID, shareByDefault ? 1 : 0]
+      [profileId, predicateID, nodeID, shareByDefault ? 1 : 0]
     );
   })
 }
 
-async function getProfileFields(profileId: string): Promise<ProfileField[]> {
+async function getProfileFields(profileId: string): Promise<ProfileFields[]> {
   const db = getDatabase();
-  return await db.getAllAsync<ProfileField>(
+  return await db.getAllAsync<ProfileFields>(
     `SELECT 
                 profile_fields.id,
                 profile_fields.profile_id,
@@ -172,7 +174,7 @@ async function getProfileFields(profileId: string): Promise<ProfileField[]> {
   );
 }
 
-async function deleteProfileField(id: string): Promise<void> {
+async function deleteProfileField(id: number): Promise<void> {
   const db = getDatabase();
   await db.runAsync("DELETE FROM profile_fields WHERE id = ?", [id]);
 }
@@ -188,20 +190,19 @@ async function upsertMask(
 ): Promise<void> {
   const db = getDatabase();
   const timestamp = createdAt || Date.now();
-  const id = `mask-${name.toLowerCase().replace(/\s+/g, '-')}-${profileId}`;
-  console.log("upsertMask: Inserting mask with:", { id, name, profileId, timestamp });
+  console.log("upsertMask: Inserting mask with:", {name, profileId, timestamp });
   await db.runAsync(
-    `INSERT INTO masks (id, name, profile_id, created_at)
-     VALUES (?, ?, ?, ?)
-     ON CONFLICT(name) DO UPDATE SET name = excluded.name`,
-    [id, name, profileId, timestamp]
+    `INSERT INTO masks (name, profile_id, created_at)
+     VALUES (?, ?, ?)
+     ON CONFLICT(name, profile_id) DO UPDATE SET name = excluded.name`,
+    [name, profileId, timestamp]
   );
   console.log("upsertMask: Insert completed");
 
   // Verify the mask was inserted
   const verifyMask = await db.getFirstAsync<Mask>(
-    "SELECT * FROM masks WHERE id = ?",
-    [id]
+    "SELECT * FROM masks WHERE name = ?",
+    [name]
   );
   console.log("upsertMask: Verification query result:", verifyMask);
 }
@@ -241,7 +242,7 @@ async function getMasks(profileId: string): Promise<Mask[]> {
   return masks;
 }
 
-async function getMask(id: string): Promise<Mask | null> {
+async function getMask(id: number): Promise<Mask | null> {
   const db = getDatabase();
   return await db.getFirstAsync<Mask>(
     "SELECT * FROM masks WHERE id = ?",
@@ -259,8 +260,8 @@ async function deleteMask(name: string): Promise<void> {
 // ============================================================================
 
 async function setMaskFields(
-  maskId: string,
-  profileFieldIds: string[]
+  maskId: number,
+  profileFieldIds: number[]
 ): Promise<void> {
   const db = getDatabase();
   // Delete existing associations
@@ -269,13 +270,14 @@ async function setMaskFields(
   // Insert new associations
   for (const fieldId of profileFieldIds) {
     await db.runAsync(
-      "INSERT INTO mask_fields (mask_id, profile_field_id) VALUES (?, ?)",
+      "INSERT INTO mask_fields (mask_id, profile_field_id) VALUES (?, ?)" +
+        " ON CONFLICT(mask_id, profile_field_id) DO NOTHING",
       [maskId, fieldId]
     );
   }
 }
 
-async function getMaskFields(maskId: string): Promise<ProfileField[]> {
+async function getMaskFields(maskId: number): Promise<ProfileField[]> {
   const db = getDatabase();
   return await db.getAllAsync<ProfileField>(
     `SELECT pf.* FROM profile_fields pf
@@ -290,7 +292,6 @@ async function getMaskFields(maskId: string): Promise<ProfileField[]> {
 // ============================================================================
 
 async function upsertConnection(
-  id: string,
   issuer: string | null,
   displayName: string,
   rawPayload: string,
@@ -300,13 +301,13 @@ async function upsertConnection(
   const db = getDatabase();
   const timestamp = connectedAt || Date.now();
   await db.runAsync(
-    `INSERT INTO connections (id, connected_at, issuer, display_name, avatar_uri, raw_payload)
-     VALUES (?, ?, ?, ?, ?, ?)
+    `INSERT INTO connections (connected_at, issuer, display_name, avatar_uri, raw_payload)
+     VALUES (?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
        display_name = excluded.display_name,
        avatar_uri = excluded.avatar_uri,
        raw_payload = excluded.raw_payload`,
-    [id, timestamp, issuer, displayName, avatarUri?? null, rawPayload]
+    [timestamp, issuer, displayName, avatarUri?? null, rawPayload]
   );
 }
 
@@ -360,12 +361,11 @@ async function getConnectionFields(connectionId: string): Promise<ConnectionFiel
     `SELECT 
                 connection_fields.id,
                 predicates.label AS label,
-                nodes.label AS value,
+                nodes.label AS value
             FROM connection_fields
             JOIN predicates ON connection_fields.predicate_id = predicates.id
             JOIN nodes ON connection_fields.node_id = nodes.id
             WHERE connection_id = ?
-
             `,
     [connectionId]
   );

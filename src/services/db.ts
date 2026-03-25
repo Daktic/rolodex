@@ -8,7 +8,8 @@ const creationStatements: Record<string, string> = {
       id TEXT PRIMARY KEY,
       display_name TEXT NOT NULL,
       avatar_uri TEXT,
-      created_at INTEGER NOT NULL
+      created_at INTEGER NOT NULL,
+      UNIQUE(id, display_name)
     )
   `,
     connections: `
@@ -25,13 +26,13 @@ const creationStatements: Record<string, string> = {
     predicates: `
         CREATE TABLE IF NOT EXISTS predicates (
             id INTEGER PRIMARY KEY,
-            label TEXT NOT NULL -- "works at", "knows", "attended", "linkedin"
+            label TEXT NOT NULL UNIQUE -- "works at", "knows", "attended", "linkedin"
         )
     `,
     node_types: `
         CREATE TABLE IF NOT EXISTS node_types (
             id INTEGER PRIMARY KEY,
-            label TEXT NOT NULL, -- "Person", "Organization", "Event", "Place"
+            label TEXT NOT NULL UNIQUE, -- "Person", "Organization", "Event", "Place"
             icon TEXT
         )
     `,
@@ -39,9 +40,10 @@ const creationStatements: Record<string, string> = {
         CREATE TABLE IF NOT EXISTS nodes (
               id INTEGER PRIMARY KEY,
               label TEXT NOT NULL,       -- "Acme Corp", "ETH Denver", "john doe"
-              type TEXT,                 -- "company", "event", "person", "url", "username"
+              type_id INTEGER,                 -- "company", "event", "person", "url", "username"
               value TEXT,                -- raw value if different from label
-              FOREIGN KEY (type) REFERENCES node_types(id)
+              FOREIGN KEY (type_id) REFERENCES node_types(id),
+              UNIQUE(label, type_id, value)
         )
     `,
     triples: `
@@ -53,46 +55,50 @@ const creationStatements: Record<string, string> = {
              created_at INTEGER NOT NULL,
              FOREIGN KEY (subject_id) REFERENCES connections(id),
              FOREIGN KEY (predicate_id) REFERENCES predicates(id),
-             FOREIGN KEY (object_id) REFERENCES nodes(id)
+             FOREIGN KEY (object_id) REFERENCES nodes(id),
+            UNIQUE(subject_id, predicate_id, object_id)
         );
     `,
     profileFields: `
     CREATE TABLE IF NOT EXISTS profile_fields (
-      id TEXT PRIMARY KEY,
+      id INTEGER PRIMARY KEY,
       profile_id TEXT NOT NULL,
       predicate_id INTEGER NOT NULL,
       node_id INTEGER NOT NULL,
       share_by_default INTEGER NOT NULL,
       FOREIGN KEY (profile_id) REFERENCES profile(id) ON DELETE CASCADE,
       FOREIGN KEY (predicate_id) REFERENCES predicates(id),
-      FOREIGN KEY (node_id) REFERENCES nodes(id)
+      FOREIGN KEY (node_id) REFERENCES nodes(id),
+      UNIQUE(profile_id, predicate_id, node_id)
     )
   `,
 
     masks: `
     CREATE TABLE IF NOT EXISTS masks (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL UNIQUE,
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
       profile_id TEXT NOT NULL,
       created_at INTEGER NOT NULL,
-      FOREIGN KEY (profile_id) REFERENCES profile(id) ON DELETE CASCADE
+      FOREIGN KEY (profile_id) REFERENCES profile(id) ON DELETE CASCADE,
+      UNIQUE(name, profile_id)
     )
   `,
 
     maskFields: `
     CREATE TABLE IF NOT EXISTS mask_fields (
-      mask_id TEXT NOT NULL,
-      profile_field_id TEXT NOT NULL,
+      mask_id INTEGER NOT NULL,
+      profile_field_id INTEGER NOT NULL,
       PRIMARY KEY (mask_id, profile_field_id),
       FOREIGN KEY (mask_id) REFERENCES masks(id),
-      FOREIGN KEY (profile_field_id) REFERENCES profile_fields(id) ON DELETE CASCADE
+      FOREIGN KEY (profile_field_id) REFERENCES profile_fields(id) ON DELETE CASCADE,
+      UNIQUE(mask_id, profile_field_id)
     )
   `,
 
     connectionFields: `
     CREATE TABLE IF NOT EXISTS connection_fields (
       id TEXT PRIMARY KEY,
-      connection_id TEXT NOT NULL,
+      connection_id INTEGER NOT NULL,
       predicate_id INTEGER NOT NULL,
       node_id INTEGER NOT NULL,
       FOREIGN KEY (connection_id) REFERENCES connections(id) ON DELETE CASCADE,
@@ -104,8 +110,8 @@ const creationStatements: Record<string, string> = {
     annotations: `
     CREATE TABLE IF NOT EXISTS annotations (
       id TEXT PRIMARY KEY,
-      connection_id TEXT NOT NULL,
-      node_type_id TEXT NOT NULL,
+      connection_id INTEGER NOT NULL,
+      node_type_id INTEGER NOT NULL,
       predicate_id INTEGER NOT NULL,
       node_id INTEGER NOT NULL,
       created_at INTEGER NOT NULL,
@@ -122,6 +128,8 @@ export async function initDatabase() {
     if (dbInstance) return dbInstance;
 
     const db = await SQLite.openDatabaseAsync("rolodex.db");
+
+    await db.execAsync('PRAGMA foreign_keys = ON');
 
     // Create tables
     for (const statement of Object.values(creationStatements)) {

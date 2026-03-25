@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, TextInput, Pressable, Alert, Animated } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
-import { Mask } from '@/types/storage';
+import { Mask } from '@/types/db';
 import { setMaskFields, getMaskFields } from '@/services/storage';
 
 interface KeyValueBoxProps {
@@ -12,11 +12,12 @@ interface KeyValueBoxProps {
   onKeyChange?: (key: string) => void;
   onValueChange?: (value: string) => void;
   onLongPress?: () => void;
+  onBlur?: (key: string, value: string) => void;
   onDelete?: () => void;
   currentMask?: Mask | null;
-  fieldId?: string;
+  fieldId?: number;
   isMasked?: boolean;
-  onMaskToggle?: (fieldId: string, isMasked: boolean) => void;
+  onMaskToggle?: (fieldId: number, isMasked: boolean) => void;
 }
 
 export default function KeyValueBox({
@@ -27,6 +28,7 @@ export default function KeyValueBox({
   onKeyChange,
   onValueChange,
   onLongPress,
+  onBlur,
   onDelete,
   currentMask,
   fieldId,
@@ -54,6 +56,12 @@ export default function KeyValueBox({
   const handleValueChange = (newValue: string) => {
     setValue(newValue);
     onValueChange?.(newValue);
+  };
+
+  const handleBlur = () => {
+    if (key.trim() && value.trim()) {
+      onBlur?.(key, value);
+    }
   };
 
   const handleDelete = () => {
@@ -91,7 +99,7 @@ export default function KeyValueBox({
       const currentMaskFields = await getMaskFields(currentMask.id);
       const currentFieldIds = currentMaskFields.map(f => f.id);
 
-      let updatedFieldIds: string[];
+      let updatedFieldIds: number[];
       if (newMaskedState) {
         // Add field to mask
         updatedFieldIds = [...currentFieldIds, fieldId];
@@ -166,6 +174,7 @@ export default function KeyValueBox({
               style={styles.keyInput}
               value={key}
               onChangeText={handleKeyChange}
+              onBlur={handleBlur}
               placeholder="Key"
               placeholderTextColor="#999"
             />
@@ -182,6 +191,7 @@ export default function KeyValueBox({
               style={styles.valueInput}
               value={value}
               onChangeText={handleValueChange}
+              onBlur={handleBlur}
               placeholder="Value"
               placeholderTextColor="#999"
             />
