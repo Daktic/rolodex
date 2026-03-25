@@ -74,7 +74,44 @@ const creationStatements: Record<string, string> = {
       created_at INTEGER NOT NULL,
       FOREIGN KEY (connection_id) REFERENCES connections(id) ON DELETE CASCADE
     )
-  `
+  `,
+//     Semantic Triples
+    predicates: `
+        CREATE TABLE IF NOT EXISTS predicates (
+            id TEXT PRIMARY KEY,
+            label TEXT NOT NULL, -- "works at", "knows", "attended", "linkedin"
+            created_at INTEGER NOT NULL
+        )
+    `,
+    node_types: `
+        CREATE TABLE IF NOT EXISTS node_types (
+            id TEXT PRIMARY KEY,
+            label TEXT NOT NULL, -- "Person", "Organization", "Event", "Place"
+            icon TEXT
+        )
+    `,
+    nodes: `
+        CREATE TABLE IF NOT EXISTS nodes (
+              id TEXT PRIMARY KEY,
+              label TEXT NOT NULL,       -- "Acme Corp", "ETH Denver", "john doe"
+              type TEXT,                 -- "company", "event", "person", "url", "username"
+              value TEXT,                -- raw value if different from label
+              created_at INTEGER NOT NULL,
+              FOREIGN KEY (type) REFERENCES node_types(id)
+        )
+    `,
+    edges: `
+        CREATE TABLE IF NOT EXISTS triples (
+             id TEXT PRIMARY KEY,
+             subject_id TEXT NOT NULL,  -- references connections.id
+             predicate_id TEXT NOT NULL,
+             object_id TEXT NOT NULL,
+             created_at INTEGER NOT NULL,
+             FOREIGN KEY (subject_id) REFERENCES connections(id),
+             FOREIGN KEY (predicate_id) REFERENCES predicates(id),
+             FOREIGN KEY (object_id) REFERENCES nodes(id)
+        );
+    `
 };
 
 
