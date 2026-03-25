@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, TouchableOpacity, Modal, ScrollView, TextInput,
 import { useState, useEffect } from "react";
 import {deleteMask, getMasks, upsertMask} from "@/services/storage";
 import { getProfileId } from "@/services/wallet";
-import {Mask} from "@/types/storage";
+import {Mask} from "@/types/db";
 import Swipeable from "react-native-gesture-handler/Swipeable";
 
 
