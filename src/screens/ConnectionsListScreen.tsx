@@ -3,7 +3,7 @@ import { StyleSheet, View, FlatList, Text } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ConnectionsStackParamList } from '@/navigation/ConnectionsStack';
-import { Connection, ConnectionField } from '@/types/storage';
+import { Connection, ConnectionField } from '@/types/db';
 import { getAllConnections, getConnectionFields, deleteConnection } from '@/services/storage';
 import ConnectionContainer from '@/components/screens/connectionList/ConnectionContainer';
 import ConnectionListHeader from "@/components/screens/connectionList/ConnectionListHeader";
@@ -51,7 +51,7 @@ const ConnectionsListScreen = () => {
     navigation.navigate('ConnectionDetail', { connectionId: connection.id });
   };
 
-  const handleDelete = async (connectionId: string) => {
+  const handleDelete = async (connectionId: number) => {
     try {
       await deleteConnection(connectionId);
       // Remove from local state
@@ -89,7 +89,7 @@ const ConnectionsListScreen = () => {
       <ConnectionListHeader />
       <FlatList
         data={connections}
-        keyExtractor={(item) => item.connection.id}
+        keyExtractor={(item) => item.connection.id.toString()}
         renderItem={({ item }) => (
           <ConnectionContainer
             connection={item.connection}
