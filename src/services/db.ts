@@ -11,15 +11,61 @@ const creationStatements: Record<string, string> = {
       created_at INTEGER NOT NULL
     )
   `,
-
+    connections: `
+    CREATE TABLE IF NOT EXISTS connections (
+      id INTEGER PRIMARY KEY,
+      connected_at INTEGER NOT NULL,
+      issuer TEXT,
+      display_name TEXT NOT NULL,
+      avatar_uri TEXT,
+      raw_payload TEXT NOT NULL
+    )
+  `,
+    //     Semantic Triples
+    predicates: `
+        CREATE TABLE IF NOT EXISTS predicates (
+            id INTEGER PRIMARY KEY,
+            label TEXT NOT NULL -- "works at", "knows", "attended", "linkedin"
+        )
+    `,
+    node_types: `
+        CREATE TABLE IF NOT EXISTS node_types (
+            id INTEGER PRIMARY KEY,
+            label TEXT NOT NULL, -- "Person", "Organization", "Event", "Place"
+            icon TEXT
+        )
+    `,
+    nodes: `
+        CREATE TABLE IF NOT EXISTS nodes (
+              id INTEGER PRIMARY KEY,
+              label TEXT NOT NULL,       -- "Acme Corp", "ETH Denver", "john doe"
+              type TEXT,                 -- "company", "event", "person", "url", "username"
+              value TEXT,                -- raw value if different from label
+              FOREIGN KEY (type) REFERENCES node_types(id)
+        )
+    `,
+    triples: `
+        CREATE TABLE IF NOT EXISTS triples (
+             id INTEGER PRIMARY KEY,
+             subject_id INTEGER NOT NULL,  -- references connections.id
+             predicate_id INTEGER NOT NULL,
+             object_id INTEGER NOT NULL,
+             created_at INTEGER NOT NULL,
+             FOREIGN KEY (subject_id) REFERENCES connections(id),
+             FOREIGN KEY (predicate_id) REFERENCES predicates(id),
+             FOREIGN KEY (object_id) REFERENCES nodes(id)
+        );
+    `,
     profileFields: `
     CREATE TABLE IF NOT EXISTS profile_fields (
       id TEXT PRIMARY KEY,
       profile_id TEXT NOT NULL,
-      label TEXT NOT NULL,
-      value TEXT NOT NULL,
+      predicate_id INTEGER NOT NULL,
+      node_id INTEGER NOT NULL,
       share_by_default INTEGER NOT NULL,
-      FOREIGN KEY (profile_id) REFERENCES profile(id) ON DELETE CASCADE
+      FOREIGN KEY (profile_id) REFERENCES profile(id) ON DELETE CASCADE,
+      FOREIGN KEY (predicate_id) REFERENCES predicates(id),
+      FOREIGN KEY (node_id) REFERENCES nodes(id)
     )
   `,
 
@@ -43,24 +89,15 @@ const creationStatements: Record<string, string> = {
     )
   `,
 
-    connections: `
-    CREATE TABLE IF NOT EXISTS connections (
-      id TEXT PRIMARY KEY,
-      connected_at INTEGER NOT NULL,
-      issuer TEXT,
-      display_name TEXT NOT NULL,
-      avatar_uri TEXT,
-      raw_payload TEXT NOT NULL
-    )
-  `,
-
     connectionFields: `
     CREATE TABLE IF NOT EXISTS connection_fields (
       id TEXT PRIMARY KEY,
       connection_id TEXT NOT NULL,
-      label TEXT NOT NULL,
-      value TEXT NOT NULL,
-      FOREIGN KEY (connection_id) REFERENCES connections(id) ON DELETE CASCADE
+      predicate_id INTEGER NOT NULL,
+      node_id INTEGER NOT NULL,
+      FOREIGN KEY (connection_id) REFERENCES connections(id) ON DELETE CASCADE,
+      FOREIGN KEY (predicate_id) REFERENCES predicates(id),
+      FOREIGN KEY (node_id) REFERENCES nodes(id)
     )
   `,
 
@@ -68,50 +105,16 @@ const creationStatements: Record<string, string> = {
     CREATE TABLE IF NOT EXISTS annotations (
       id TEXT PRIMARY KEY,
       connection_id TEXT NOT NULL,
-      type TEXT NOT NULL,
-      label TEXT NOT NULL,
-      value TEXT NOT NULL,
+      node_type_id TEXT NOT NULL,
+      predicate_id INTEGER NOT NULL,
+      node_id INTEGER NOT NULL,
       created_at INTEGER NOT NULL,
-      FOREIGN KEY (connection_id) REFERENCES connections(id) ON DELETE CASCADE
+      FOREIGN KEY (connection_id) REFERENCES connections(id) ON DELETE CASCADE,
+      FOREIGN KEY (node_type_id) REFERENCES node_types(id),
+      FOREIGN KEY (predicate_id) REFERENCES predicates(id),
+      FOREIGN KEY (node_id) REFERENCES nodes(id)
     )
-  `,
-//     Semantic Triples
-    predicates: `
-        CREATE TABLE IF NOT EXISTS predicates (
-            id TEXT PRIMARY KEY,
-            label TEXT NOT NULL, -- "works at", "knows", "attended", "linkedin"
-            created_at INTEGER NOT NULL
-        )
-    `,
-    node_types: `
-        CREATE TABLE IF NOT EXISTS node_types (
-            id TEXT PRIMARY KEY,
-            label TEXT NOT NULL, -- "Person", "Organization", "Event", "Place"
-            icon TEXT
-        )
-    `,
-    nodes: `
-        CREATE TABLE IF NOT EXISTS nodes (
-              id TEXT PRIMARY KEY,
-              label TEXT NOT NULL,       -- "Acme Corp", "ETH Denver", "john doe"
-              type TEXT,                 -- "company", "event", "person", "url", "username"
-              value TEXT,                -- raw value if different from label
-              created_at INTEGER NOT NULL,
-              FOREIGN KEY (type) REFERENCES node_types(id)
-        )
-    `,
-    edges: `
-        CREATE TABLE IF NOT EXISTS triples (
-             id TEXT PRIMARY KEY,
-             subject_id TEXT NOT NULL,  -- references connections.id
-             predicate_id TEXT NOT NULL,
-             object_id TEXT NOT NULL,
-             created_at INTEGER NOT NULL,
-             FOREIGN KEY (subject_id) REFERENCES connections(id),
-             FOREIGN KEY (predicate_id) REFERENCES predicates(id),
-             FOREIGN KEY (object_id) REFERENCES nodes(id)
-        );
-    `
+  `
 };
 
 

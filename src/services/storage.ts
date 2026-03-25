@@ -74,6 +74,61 @@ async function deleteProfile(id: string): Promise<void> {
 }
 
 // ============================================================================
+// Semantic Operations
+// ============================================================================
+async function upsertPredicate(label: string) {
+  const db = getDatabase();
+
+  const row = await db.runAsync(
+    `INSERT INTO predicates (label)
+     VALUES (?)
+     ON CONFLICT(label) DO UPDATE SET label = excluded.label`,
+    [label]
+  );
+
+  return row.lastInsertRowId;
+}
+
+async function upsertNodeType(label: string, icon?: string) {
+  const db = getDatabase();
+  const row = await db.runAsync(
+    `INSERT INTO node_types (label, icon)
+     VALUES (?, ?)
+     ON CONFLICT(label) DO NOTHING`,
+    [label, icon?? null]
+  );
+
+  return row.lastInsertRowId;
+}
+
+async function upsertNode(label: string, type?: string, value?: string) {
+  const db = getDatabase();
+  if (type) await upsertNodeType(type);
+
+  const row = await db.runAsync(
+    `INSERT INTO nodes (label, type, value)
+     VALUES (?, ?, ?)
+     ON CONFLICT(label) DO NOTHING`,
+    [label, type?? null, value?? null]
+  );
+
+  return row.lastInsertRowId;
+}
+
+async function upsertTipple(subjectID: number, predicateID: number, objectID: number, createdAt?: number) {
+  const db = getDatabase();
+  const timestamp = createdAt || Date.now();
+  const row = await db.runAsync(
+    `INSERT INTO tipple (subject_id, predicate_id, object_id, created_at)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT(subject_id, predicate_id, object_id) DO NOTHING`,
+    [subjectID, predicateID, objectID, timestamp]
+  );
+
+  return row.lastInsertRowId;
+}
+
+// ============================================================================
 // Profile Fields Operations
 // ============================================================================
 
@@ -85,21 +140,34 @@ async function upsertProfileField(
   shareByDefault: boolean
 ): Promise<void> {
   const db = getDatabase();
-  await db.runAsync(
-    `INSERT INTO profile_fields (id, profile_id, label, value, share_by_default)
-     VALUES (?, ?, ?, ?, ?)
-     ON CONFLICT(id) DO UPDATE SET
-       label = excluded.label,
-       value = excluded.value,
-       share_by_default = excluded.share_by_default`,
-    [id, profileId, label, value, shareByDefault ? 1 : 0]
-  );
+  await db.withTransactionAsync(async () => {
+    const predicateID = await upsertPredicate(label);
+    const nodeID = await upsertNode(value);
+    await db.runAsync(
+      `INSERT INTO profile_fields (id, profile_id, predicate_id, node_id, share_by_default)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         predicate_id = excluded.predicate_id,
+         node_id = excluded.node_id,
+         share_by_default = excluded.share_by_default`,
+      [id, profileId, predicateID, nodeID, shareByDefault ? 1 : 0]
+    );
+  })
 }
 
 async function getProfileFields(profileId: string): Promise<ProfileField[]> {
   const db = getDatabase();
   return await db.getAllAsync<ProfileField>(
-    "SELECT * FROM profile_fields WHERE profile_id = ?",
+    `SELECT 
+                profile_fields.id,
+                profile_fields.profile_id,
+                predicates.label AS label,
+                nodes.label AS value
+            FROM profile_fields
+            JOIN predicates ON profile_fields.predicate_id = predicates.id
+            JOIN nodes ON profile_fields.node_id = nodes.id
+            WHERE profile_id = ?
+            `,
     [profileId]
   );
 }
@@ -271,24 +339,39 @@ async function upsertConnectionField(
   value: string
 ): Promise<void> {
   const db = getDatabase();
-  await db.runAsync(
-    `INSERT INTO connection_fields (id, connection_id, label, value)
+  await db.withTransactionAsync(async () => {
+    const predicateID = await upsertPredicate(label);
+    const nodeID = await upsertNode(value);
+
+    await db.runAsync(
+        `INSERT INTO connection_fields (id, connection_id, predicate_id, node_id)
      VALUES (?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
-       label = excluded.label,
-       value = excluded.value`,
-    [id, connectionId, label, value]
-  );
+       predicate_id = excluded.predicate_id,
+       node_id = excluded.node_id`,
+        [id, connectionId, predicateID, nodeID]
+    );
+  })
 }
 
 async function getConnectionFields(connectionId: string): Promise<ConnectionField[]> {
   const db = getDatabase();
   return await db.getAllAsync<ConnectionField>(
-    "SELECT * FROM connection_fields WHERE connection_id = ?",
+    `SELECT 
+                connection_fields.id,
+                predicates.label AS label,
+                nodes.label AS value,
+            FROM connection_fields
+            JOIN predicates ON connection_fields.predicate_id = predicates.id
+            JOIN nodes ON connection_fields.node_id = nodes.id
+            WHERE connection_id = ?
+
+            `,
     [connectionId]
   );
 }
 
+// I don't think we should allow this, but unsure
 async function deleteConnectionField(id: string): Promise<void> {
   const db = getDatabase();
   await db.runAsync("DELETE FROM connection_fields WHERE id = ?", [id]);
@@ -308,21 +391,40 @@ async function upsertAnnotation(
 ): Promise<void> {
   const db = getDatabase();
   const timestamp = createdAt || Date.now();
-  await db.runAsync(
-    `INSERT INTO annotations (id, connection_id, type, label, value, created_at)
+  await db.withTransactionAsync(async () => {
+    const predicateID = await upsertPredicate(label);
+    const typeID = await upsertNodeType(type);
+    const nodeID = await upsertNode(value);
+
+    await db.runAsync(
+        `INSERT INTO annotations (id, connection_id, node_type_id, predicate_id, node_id, created_at)
      VALUES (?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
-       type = excluded.type,
-       label = excluded.label,
-       value = excluded.value`,
-    [id, connectionId, type, label, value, timestamp]
-  );
+       node_type_id = excluded.node_type_id,
+       predicate_id = excluded.predicate_id,
+       node_id = excluded.node_id`,
+        [id, connectionId, typeID, predicateID, nodeID, timestamp]
+    );
+  })
+
 }
 
 async function getAnnotations(connectionId: string): Promise<Annotation[]> {
   const db = getDatabase();
   return await db.getAllAsync<Annotation>(
-    "SELECT * FROM annotations WHERE connection_id = ? ORDER BY created_at DESC",
+    `SELECT 
+                annotations.id,
+                node_types.label AS type,
+                predicates.label AS label,
+                nodes.label AS value,
+                annotations.created_at
+            FROM annotations 
+            JOIN node_types ON annotations.node_type_id = node_types.id
+            JOIN predicates ON annotations.predicate_id = predicates.id
+            JOIN nodes ON annotations.node_id = nodes.id
+            WHERE connection_id = ? 
+            ORDER BY annotations.created_at DESC
+            `,
     [connectionId]
   );
 }
