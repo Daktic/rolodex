@@ -4,7 +4,7 @@ import ProfileImage from '../components/screens/profile/ProfileImage';
 import ContactInfo from '../components/screens/profile/ContactInfo';
 import ProfileDisplayName from '../components/screens/profile/ProfileDisplayName';
 import Masks from '@/components/screens/profile/Masks';
-import { Mask } from '@/types/storage';
+import { Mask } from '@/types/db';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ProfileStackParamList } from '@/navigation/ProfileStack';
