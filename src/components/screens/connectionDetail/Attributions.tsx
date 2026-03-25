@@ -3,7 +3,7 @@ import { StyleSheet, View, TouchableOpacity, Text, TextInput, Alert, Animated, P
 import { Swipeable } from 'react-native-gesture-handler';
 import { getConnectionFields, getAnnotations, upsertAnnotation, deleteAnnotation } from '@/services/storage';
 import AddTriple from "@/dialogs/AddTriple";
-import {Node, NodeType, Predicate} from "@/types/db";
+import {SemanticNode, ObjectType, Predicate} from "@/types/db";
 
 interface AttributionItem {
   id: number;
@@ -22,8 +22,8 @@ export default function Attributions({ connectionId }: AttributionsProps) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [newLabel, setNewLabel] = useState<Predicate | null>(null);
-  const [newValue, setNewValue] = useState<Node | null>(null);
-  const [newType, setNewType] = useState<NodeType | null>(null);
+  const [newValue, setNewValue] = useState<SemanticNode | null>(null);
+  const [newType, setNewType] = useState<ObjectType | null>(null);
 
   useEffect(() => {
     loadAttributions();
@@ -68,7 +68,7 @@ export default function Attributions({ connectionId }: AttributionsProps) {
       const item = items.find((i) => i.id === id);
       if (!item || item.isLocked) return;
 
-      await upsertAnnotation(connectionId, item.type || 'general', label, value);
+      await upsertAnnotation(connectionId, label, value);
       await loadAttributions();
     } catch (error) {
       console.error('Failed to update annotation:', error);
@@ -107,7 +107,7 @@ export default function Attributions({ connectionId }: AttributionsProps) {
     }
 
     try {
-      await upsertAnnotation(connectionId, newType?.label ?? 'general', newLabel.label, newValue?.value);
+      await upsertAnnotation(connectionId, newLabel.label, newValue?.value);
       await loadAttributions();
       setShowAddDialog(false);
       setNewLabel(null);

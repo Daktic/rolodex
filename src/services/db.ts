@@ -23,27 +23,27 @@ const creationStatements: Record<string, string> = {
     )
   `,
     //     Semantic Triples
+    node_types: `
+        CREATE TABLE IF NOT EXISTS object_types (
+            id INTEGER PRIMARY KEY,
+            label TEXT NOT NULL UNIQUE, -- "Person", "Organization", "Event", "Place", "URL", "Username"
+            icon TEXT
+        )
+    `,
     predicates: `
         CREATE TABLE IF NOT EXISTS predicates (
             id INTEGER PRIMARY KEY,
-            label TEXT NOT NULL UNIQUE -- "works at", "knows", "attended", "linkedin"
-        )
-    `,
-    node_types: `
-        CREATE TABLE IF NOT EXISTS node_types (
-            id INTEGER PRIMARY KEY,
-            label TEXT NOT NULL UNIQUE, -- "Person", "Organization", "Event", "Place"
-            icon TEXT
+            label TEXT NOT NULL UNIQUE, -- "works at", "knows", "attended", "linkedin"
+            object_type_id INTEGER,
+            FOREIGN KEY (object_type_id) REFERENCES object_types(id)
         )
     `,
     nodes: `
         CREATE TABLE IF NOT EXISTS nodes (
               id INTEGER PRIMARY KEY,
               label TEXT NOT NULL,       -- "Acme Corp", "ETH Denver", "john doe"
-              type_id INTEGER,                 -- "company", "event", "person", "url", "username"
               value TEXT,                -- raw value if different from label
-              FOREIGN KEY (type_id) REFERENCES node_types(id),
-              UNIQUE(label, type_id, value)
+              UNIQUE(label, value)
         )
     `,
     triples: `
@@ -112,15 +112,13 @@ const creationStatements: Record<string, string> = {
     CREATE TABLE IF NOT EXISTS annotations (
       id INTEGER PRIMARY KEY,
       connection_id INTEGER NOT NULL,
-      node_type_id INTEGER NOT NULL,
       predicate_id INTEGER NOT NULL,
       node_id INTEGER NOT NULL,
       created_at INTEGER NOT NULL,
       FOREIGN KEY (connection_id) REFERENCES connections(id) ON DELETE CASCADE,
-      FOREIGN KEY (node_type_id) REFERENCES node_types(id),
       FOREIGN KEY (predicate_id) REFERENCES predicates(id),
       FOREIGN KEY (node_id) REFERENCES nodes(id),
-      UNIQUE(connection_id, node_type_id, predicate_id, node_id)
+      UNIQUE(connection_id, predicate_id, node_id)
     )
   `
 };

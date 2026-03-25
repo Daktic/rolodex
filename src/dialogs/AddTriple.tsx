@@ -2,7 +2,7 @@ import {Modal, StyleSheet, TextInput, Text, TouchableOpacity, View, StyleProp, T
 import DropDownPicker, {ItemType} from "react-native-dropdown-picker";
 import {useEffect, useState} from "react";
 import {getAllNodes, getAllPredicates} from "@/services/storage";
-import {Predicate, Node, NodeType} from "@/types/db";
+import {Predicate, SemanticNode, ObjectType} from "@/types/db";
 
 interface AddTripleProps {
     visible: boolean;
@@ -10,10 +10,10 @@ interface AddTripleProps {
     handleAdd: () => void;
     newLabel: Predicate | null;
     setNewLabel: (label: Predicate | null) => void;
-    newValue: Node | null;
-    setNewValue: (value: Node | null) => void;
-    newType: NodeType | null;
-    setNewType: (type: NodeType | null) => void;
+    newValue: SemanticNode | null;
+    setNewValue: (value: SemanticNode | null) => void;
+    newType: ObjectType | null;
+    setNewType: (type: ObjectType | null) => void;
 }
 
 const AddTriple = ({
@@ -45,7 +45,7 @@ const AddTriple = ({
     }, [predicates]);
 
     const handlePredicateSelection = (item: ItemType<number>) => {
-        setNewLabel(predicates.find(p => p.id === item.value) ?? { id: -1, label: item.label ?? '' });
+        setNewLabel(predicates.find(p => p.id === item.value) ?? { id: -1, label: item.label ?? '', object_type_id: null });
     };
 
 

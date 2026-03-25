@@ -10,18 +10,18 @@ export interface Profile {
 export interface Predicate {
   id: number;
   label: string; // e.g. "works at", "knows", "attended", "linkedin"
+  object_type_id: number | null; // references object_types.id
 }
 
-export interface NodeType {
+export interface ObjectType {
   id: number;
-  label: string; // e.g. "Person", "Organization", "Event", "Place"
+  label: string; // e.g. "Person", "Organization", "Event", "Place", "URL", "Username"
   icon: string | null;
 }
 
-export interface Node {
+export interface SemanticNode {
   id: number;
   label: string; // e.g. "Acme Corp", "ETH Denver", "john doe"
-  type: string | null; // e.g. "company", "event", "person", "url", "username"
   value: string | null; // raw value if different from label
 }
 
@@ -79,7 +79,7 @@ export interface ConnectionField {
 export interface Annotation {
   id: number;
   connection_id: number;
-  node_type_id: number;
+  object_type_id: number;
   predicate_id: number;
   node_id: number;
   created_at: number;

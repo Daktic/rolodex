@@ -5,7 +5,7 @@ import {
     Connection,
     ConnectionField,
     ProfileFields,
-    AnnotationField, Predicate, NodeType, Node
+    AnnotationField, Predicate, ObjectType, SemanticNode
 } from "@/types/db";
 import {getDatabase} from "@/services/db";
 
@@ -100,7 +100,7 @@ async function getAllPredicates(): Promise<Predicate[]> {
     return await db.getAllAsync<Predicate>("SELECT * FROM predicates");
 }
 
-async function upsertNodeType(label: string, icon?: string) {
+async function upsertObjectType(label: string, icon?: string) {
   const db = getDatabase();
   const row = await db.runAsync(
     `INSERT INTO node_types (label, icon)
@@ -112,35 +112,33 @@ async function upsertNodeType(label: string, icon?: string) {
   return row.lastInsertRowId;
 }
 
-async function getAllNodeTypes(): Promise<NodeType[]> {
+async function getAllObjectTypes(): Promise<ObjectType[]> {
     const db = getDatabase();
-    return await db.getAllAsync<NodeType>("SELECT * FROM node_types");
+    return await db.getAllAsync<ObjectType>("SELECT * FROM node_types");
 }
 
-async function upsertNode(label: string, type?: string, value?: string) {
+async function upsertObject(label: string, value?: string) {
   const db = getDatabase();
-  let typeID: number | null = null;
-  if (type) typeID = await upsertNodeType(type);
 
   // SQLite treats NULL != NULL for UNIQUE constraints, so ON CONFLICT won't
   // deduplicate rows where type_id or value is NULL. Use SELECT + INSERT instead.
   const existing = await db.getFirstAsync<{ id: number }>(
-    `SELECT id FROM nodes WHERE label = ? AND type_id IS ? AND value IS ?`,
-    [label, typeID, value ?? null]
+    `SELECT id FROM nodes WHERE label = ? AND value IS ?`,
+    [label, value ?? null]
   );
   if (existing) return existing.id;
 
   const row = await db.runAsync(
-    `INSERT INTO nodes (label, type_id, value) VALUES (?, ?, ?)`,
-    [label, typeID, value ?? null]
+    `INSERT INTO nodes (label, value) VALUES (?, ?)`,
+    [label, value ?? null]
   );
 
   return row.lastInsertRowId;
 }
 
-const getAllNodes = async (): Promise<Node[]> => {
+const getAllNodes = async (): Promise<SemanticNode[]> => {
   const db = getDatabase();
-  return await db.getAllAsync<Node>("SELECT * FROM nodes");
+  return await db.getAllAsync<SemanticNode>("SELECT * FROM nodes");
 };
 
 async function upsertTriple(subjectID: number, predicateID: number, objectID: number, createdAt?: number) {
@@ -169,7 +167,7 @@ async function upsertProfileField(
   const db = getDatabase();
   await db.withTransactionAsync(async () => {
     const predicateID = await upsertPredicate(label);
-    const nodeID = await upsertNode(value);
+    const nodeID = await upsertObject(value);
     console.log("upsertProfileField ids:", { profileId, predicateID, nodeID });
 
     await db.runAsync(
@@ -215,7 +213,7 @@ async function updateProfileField(
   const db = getDatabase();
   await db.withTransactionAsync(async () => {
     const predicateID = await upsertPredicate(label);
-    const nodeID = await upsertNode(value);
+    const nodeID = await upsertObject(value);
     await db.runAsync(
       `UPDATE profile_fields SET predicate_id = ?, node_id = ?, share_by_default = ? WHERE id = ?`,
       [predicateID, nodeID, shareByDefault ? 1 : 0, id]
@@ -391,7 +389,7 @@ async function upsertConnectionField(
   const db = getDatabase();
   await db.withTransactionAsync(async () => {
     const predicateID = await upsertPredicate(label);
-    const nodeID = await upsertNode(value);
+    const nodeID = await upsertObject(value);
 
     await db.runAsync(
         `INSERT INTO connection_fields (connection_id, predicate_id, node_id)
@@ -432,7 +430,6 @@ async function deleteConnectionField(id: number): Promise<void> {
 
 async function upsertAnnotation(
   connectionId: number,
-  type: string,
   label: string,
   value: string,
   createdAt?: number
@@ -440,18 +437,16 @@ async function upsertAnnotation(
   const db = getDatabase();
   const timestamp = createdAt || Date.now();
   await db.withTransactionAsync(async () => {
-    const typeID = await upsertNodeType(type);
     const predicateID = await upsertPredicate(label);
-    const nodeID = await upsertNode(value);
+    const nodeID = await upsertObject(value);
 
     await db.runAsync(
-        `INSERT INTO annotations (connection_id, node_type_id, predicate_id, node_id, created_at)
-     VALUES (?, ?, ?, ?, ?)
-     ON CONFLICT(connection_id, node_type_id, predicate_id, node_id) DO UPDATE SET
-       node_type_id = excluded.node_type_id,
+        `INSERT INTO annotations (connection_id, predicate_id, node_id, created_at)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT(connection_id, predicate_id, node_id) DO UPDATE SET
        predicate_id = excluded.predicate_id,
        node_id = excluded.node_id`,
-        [connectionId, typeID, predicateID, nodeID, timestamp]
+        [connectionId, predicateID, nodeID, timestamp]
     );
   })
 
@@ -462,14 +457,14 @@ async function getAnnotations(connectionId: number): Promise<AnnotationField[]> 
   return await db.getAllAsync<AnnotationField>(
     `SELECT 
                 annotations.id,
-                node_types.label AS type,
+                object_types.label AS type,
                 predicates.label AS label,
                 nodes.label AS value,
                 annotations.created_at
-            FROM annotations 
-            JOIN node_types ON annotations.node_type_id = node_types.id
+            FROM annotations  
             JOIN predicates ON annotations.predicate_id = predicates.id
             JOIN nodes ON annotations.node_id = nodes.id
+            LEFT JOIN object_types ON predicates.object_type_id = object_types.id
             WHERE connection_id = ? 
             ORDER BY annotations.created_at DESC
             `,
@@ -518,6 +513,6 @@ export {
   deleteAnnotation,
   // Semantic
     getAllPredicates,
-    getAllNodeTypes,
+    getAllObjectTypes,
     getAllNodes,
 };
