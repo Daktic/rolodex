@@ -16,7 +16,7 @@ const creationStatements: Record<string, string> = {
     CREATE TABLE IF NOT EXISTS connections (
       id INTEGER PRIMARY KEY,
       connected_at INTEGER NOT NULL,
-      issuer TEXT,
+      issuer TEXT NOT NULL UNIQUE,
       display_name TEXT NOT NULL,
       avatar_uri TEXT,
       raw_payload TEXT NOT NULL
@@ -97,19 +97,20 @@ const creationStatements: Record<string, string> = {
 
     connectionFields: `
     CREATE TABLE IF NOT EXISTS connection_fields (
-      id TEXT PRIMARY KEY,
+      id INTEGER PRIMARY KEY,
       connection_id INTEGER NOT NULL,
       predicate_id INTEGER NOT NULL,
       node_id INTEGER NOT NULL,
       FOREIGN KEY (connection_id) REFERENCES connections(id) ON DELETE CASCADE,
       FOREIGN KEY (predicate_id) REFERENCES predicates(id),
-      FOREIGN KEY (node_id) REFERENCES nodes(id)
+      FOREIGN KEY (node_id) REFERENCES nodes(id),
+      UNIQUE(connection_id, predicate_id, node_id)
     )
   `,
 
     annotations: `
     CREATE TABLE IF NOT EXISTS annotations (
-      id TEXT PRIMARY KEY,
+      id INTEGER PRIMARY KEY,
       connection_id INTEGER NOT NULL,
       node_type_id INTEGER NOT NULL,
       predicate_id INTEGER NOT NULL,
@@ -118,7 +119,8 @@ const creationStatements: Record<string, string> = {
       FOREIGN KEY (connection_id) REFERENCES connections(id) ON DELETE CASCADE,
       FOREIGN KEY (node_type_id) REFERENCES node_types(id),
       FOREIGN KEY (predicate_id) REFERENCES predicates(id),
-      FOREIGN KEY (node_id) REFERENCES nodes(id)
+      FOREIGN KEY (node_id) REFERENCES nodes(id),
+      UNIQUE(connection_id, node_type_id, predicate_id, node_id)
     )
   `
 };

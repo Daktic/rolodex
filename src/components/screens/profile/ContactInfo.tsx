@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import KVBContainer, { KeyValuePair } from '../../common/KVBContainer';
-import { getProfileFields, upsertProfileField, deleteProfileField, getMaskFields } from '@/services/storage';
+import { getProfileFields, upsertProfileField, updateProfileField, deleteProfileField, getMaskFields } from '@/services/storage';
 import { Mask } from '@/types/db';
 import { getProfileId } from '@/services/wallet';
 
@@ -76,7 +76,7 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
     // Save to storage
     if (!profileId || !key.trim() || !value.trim()) return;
     try {
-      await upsertProfileField(profileId, key, value, true);
+      await updateProfileField(id, key, value, true);
     } catch (error) {
       console.error("Failed to update profile field:", error);
     }
@@ -94,13 +94,25 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
     }
   };
 
-  const handleAdd = () => {
-    const newId = Date.now();
-    setFields((prev) => [
-      ...prev,
-      { id: newId, key: '', value: '' },
-    ]);
-    // Note: Field will be saved when user types (via handleUpdate)
+  const handleAdd = async () => {
+    if (!profileId) return;
+    try {
+      // Generate a unique default label so multiple new fields can be added
+      let defaultKey = 'New Field';
+      let i = 1;
+      while (fields.some(f => f.key === defaultKey)) {
+        defaultKey = `New Field ${i++}`;
+      }
+      await upsertProfileField(profileId, defaultKey, 'Value', false);
+      const profileFields = await getProfileFields(profileId);
+      setFields(profileFields.map(field => ({
+        id: field.id,
+        key: field.label,
+        value: field.value,
+      })));
+    } catch (error) {
+      console.error("Failed to add profile field:", error);
+    }
   };
 
   const handleMaskToggle = (fieldId: number, isMasked: boolean) => {
