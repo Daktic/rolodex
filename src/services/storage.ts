@@ -17,9 +17,7 @@ async function upsertProfile(
   await db.runAsync(
     `INSERT INTO profile (id, display_name, avatar_uri, created_at)
      VALUES (?, ?, ?, ?)
-     ON CONFLICT(id) DO UPDATE SET
-      display_name = excluded.display_name,
-       avatar_uri = excluded.avatar_uri`,
+     ON CONFLICT(id) DO NOTHING`,
     [id, displayName, avatarUri?? null, timestamp]
   );
 }

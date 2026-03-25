@@ -45,6 +45,7 @@ const getOrCreateWallet = async () => {
             const account = privateKeyToAccount(existingKey as `0x${string}`);
             console.log("getOrCreateWallet: Loaded existing wallet with address:", account.address);
             cachedWallet = account;
+            await upsertProfile(account.address, "User");
             return account;
         }
 
