@@ -1,11 +1,11 @@
 import {
-  Profile,
-  ProfileField,
-  Mask,
-  Connection,
-  ConnectionField,
-  ProfileFields,
-  AnnotationField
+    Profile,
+    ProfileField,
+    Mask,
+    Connection,
+    ConnectionField,
+    ProfileFields,
+    AnnotationField, Predicate, NodeType, Node
 } from "@/types/db";
 import {getDatabase} from "@/services/db";
 
@@ -95,6 +95,11 @@ async function upsertPredicate(label: string) {
   return row.lastInsertRowId;
 }
 
+async function getAllPredicates(): Promise<Predicate[]> {
+    const db = getDatabase();
+    return await db.getAllAsync<Predicate>("SELECT * FROM predicates");
+}
+
 async function upsertNodeType(label: string, icon?: string) {
   const db = getDatabase();
   const row = await db.runAsync(
@@ -105,6 +110,11 @@ async function upsertNodeType(label: string, icon?: string) {
   );
 
   return row.lastInsertRowId;
+}
+
+async function getAllNodeTypes(): Promise<NodeType[]> {
+    const db = getDatabase();
+    return await db.getAllAsync<NodeType>("SELECT * FROM node_types");
 }
 
 async function upsertNode(label: string, type?: string, value?: string) {
@@ -127,6 +137,11 @@ async function upsertNode(label: string, type?: string, value?: string) {
 
   return row.lastInsertRowId;
 }
+
+const getAllNodes = async (): Promise<Node[]> => {
+  const db = getDatabase();
+  return await db.getAllAsync<Node>("SELECT * FROM nodes");
+};
 
 async function upsertTriple(subjectID: number, predicateID: number, objectID: number, createdAt?: number) {
   const db = getDatabase();
@@ -501,4 +516,8 @@ export {
   upsertAnnotation,
   getAnnotations,
   deleteAnnotation,
+  // Semantic
+    getAllPredicates,
+    getAllNodeTypes,
+    getAllNodes,
 };
