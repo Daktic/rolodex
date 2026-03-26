@@ -1,33 +1,12 @@
 import {Animated, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View} from "react-native";
-import {useCallback, useEffect, useRef, useState} from "react";
-import {useFocusEffect, useNavigation} from "@react-navigation/native";
-import {NativeStackNavigationProp} from "@react-navigation/native-stack";
-import {SemanticStackParamList} from "@/navigation/SemanticsStack";
-import {Predicates} from "@/types/db";
-import {deleteObjectType, deletePredicate, getAllPredicateObjects, getObjectTypesWithUsage} from "@/services/storage";
-import KVBContainer from "@/components/common/KVBContainer";
-import ObjectTypes from "@/components/screens/semantics/ObjectTypes";
-import PredicatesDialog from "@/components/screens/semantics/Predicates";
+import {useRef, useState} from "react";
+import PredicatesTab from "@/components/screens/semantics/Predicates";
+import ObjectTypesTab from "@/components/screens/semantics/ObjectTypes";
 
 const SemanticManagement = () => {
     const {width} = useWindowDimensions();
-    const navigation = useNavigation<NativeStackNavigationProp<SemanticStackParamList>>();
     const [activeTab, setActiveTab] = useState<0 | 1>(0);
     const translateX = useRef(new Animated.Value(0)).current;
-
-    const [objectTypes, setObjectTypes] = useState<{ id: number; label: string; useCount: number }[]>([]);
-    const [predicateObjects, setPredicateObjects] = useState<Predicates[]>([]);
-    const [objectTypeDialogVisible, setObjectTypeDialogVisible] = useState(false);
-    const [predicateDialogVisible, setPredicateDialogVisible] = useState(false);
-
-    const refresh = () => {
-        getObjectTypesWithUsage().then(setObjectTypes);
-        getAllPredicateObjects().then(setPredicateObjects);
-    };
-
-    useFocusEffect(useCallback(() => {
-        refresh();
-    }, []));
 
     const switchTab = (tab: 0 | 1) => {
         setActiveTab(tab);
@@ -36,28 +15,10 @@ const SemanticManagement = () => {
             duration: 250,
             useNativeDriver: true,
         }).start();
-        refresh();
     };
-
-    const handleDeleteObject = (id: number) => {
-        console.log("Deleting object type with id:", id);
-        deleteObjectType(id).then(refresh)
-    }
 
     return (
         <View style={styles.container}>
-            <PredicatesDialog
-                visible={predicateDialogVisible}
-                setVisible={setPredicateDialogVisible}
-                onAdd={refresh}
-            />
-            <ObjectTypes
-                visible={objectTypeDialogVisible}
-                setVisible={setObjectTypeDialogVisible}
-                onAdd={refresh}
-            />
-
-            {/* Tab Bar */}
             <View style={styles.tabBar}>
                 <TouchableOpacity
                     style={[styles.tab, activeTab === 0 && styles.tabActive]}
@@ -77,48 +38,14 @@ const SemanticManagement = () => {
                 </TouchableOpacity>
             </View>
 
-            {/* Sliding Content */}
             <View style={styles.slideWindow}>
                 <Animated.View style={[styles.slideContainer, {width: width * 2, transform: [{translateX}]}]}>
-
-                    {/* Predicates Tab */}
                     <View style={[styles.tabContent, {width}]}>
-                        <View style={styles.sectionHeader}>
-                            <View style={styles.columnHeaders}>
-                                <Text style={styles.columnHeaderKey}>Name</Text>
-                                <Text style={styles.columnHeaderValue}>Types</Text>
-                            </View>
-                        </View>
-                        <KVBContainer
-                            items={predicateObjects.map((p) => ({
-                                id: p.id,
-                                key: p.label,
-                                value: p.objectLabel ?? 'No type',
-                                icon: p.iconName ?? undefined,
-                            }))}
-                            onBlur={() => {}}
-                            onAdd={() => setPredicateDialogVisible(true)}
-                            onDelete={(id) => deletePredicate(id).then(refresh)}
-                            onItemPress={(id: number) => navigation.navigate('PredicateDetail', { predicateId: id })}
-                        />
+                        <PredicatesTab />
                     </View>
-
-                    {/* Object Types Tab */}
                     <View style={[styles.tabContent, {width}]}>
-                        <View style={styles.sectionHeader}>
-                            <View style={styles.columnHeaders}>
-                                <Text style={styles.columnHeaderKey}>Name</Text>
-                                <Text style={styles.columnHeaderValue}>Uses</Text>
-                            </View>
-                        </View>
-                        <KVBContainer
-                            items={objectTypes.map(ot => ({id: ot.id, key: ot.label, value: String(ot.useCount)}))}
-                            onBlur={() => {}}
-                            onAdd={() => setObjectTypeDialogVisible(true)}
-                            onDelete={handleDeleteObject}
-                        />
+                        <ObjectTypesTab />
                     </View>
-
                 </Animated.View>
             </View>
         </View>
@@ -128,9 +55,7 @@ const SemanticManagement = () => {
 export default SemanticManagement;
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
+    container: {flex: 1},
     tabBar: {
         flexDirection: 'row',
         borderBottomWidth: 1,
@@ -143,54 +68,14 @@ const styles = StyleSheet.create({
         borderBottomWidth: 2,
         borderBottomColor: 'transparent',
     },
-    tabActive: {
-        borderBottomColor: '#007AFF',
-    },
-    tabText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#999',
-    },
-    tabTextActive: {
-        color: '#007AFF',
-    },
-    slideWindow: {
-        flex: 1,
-        overflow: 'hidden',
-    },
-    slideContainer: {
-        flex: 1,
-        flexDirection: 'row',
-    },
+    tabActive: {borderBottomColor: '#007AFF'},
+    tabText: {fontSize: 14, fontWeight: '600', color: '#999'},
+    tabTextActive: {color: '#007AFF'},
+    slideWindow: {flex: 1, overflow: 'hidden'},
+    slideContainer: {flex: 1, flexDirection: 'row'},
     tabContent: {
         flex: 1,
         paddingHorizontal: 20,
         paddingTop: 16,
-    },
-    sectionHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 12,
-    },
-    columnHeaders: {
-        flexDirection: 'row',
-        flex: 1,
-    },
-    columnHeaderKey: {
-        width: '35%',
-        fontSize: 11,
-        fontWeight: '600',
-        color: '#999',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-    },
-    columnHeaderValue: {
-        flex: 1,
-        fontSize: 11,
-        fontWeight: '600',
-        color: '#999',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
     },
 });

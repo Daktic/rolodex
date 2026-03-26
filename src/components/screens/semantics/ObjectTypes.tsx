@@ -1,14 +1,16 @@
 import {Modal, StyleSheet, Text, TextInput, TouchableOpacity, View} from "react-native";
-import {useState} from "react";
-import {upsertObjectType} from "@/services/storage";
+import {useCallback, useState} from "react";
+import {deleteObjectType, getObjectTypesWithUsage, upsertObjectType} from "@/services/storage";
+import KVBContainer from "@/components/common/KVBContainer";
+import {useFocusEffect} from "@react-navigation/native";
 
-interface AddObjectTypeProps {
+interface AddObjectTypeModalProps {
     visible: boolean;
     setVisible: (visible: boolean) => void;
     onAdd: () => void;
 }
 
-const ObjectTypes = ({visible, setVisible, onAdd}: AddObjectTypeProps) => {
+const AddObjectTypeModal = ({visible, setVisible, onAdd}: AddObjectTypeModalProps) => {
     const [label, setLabel] = useState('');
 
     const handleAdd = async () => {
@@ -28,7 +30,6 @@ const ObjectTypes = ({visible, setVisible, onAdd}: AddObjectTypeProps) => {
             <View style={styles.dialogOverlay}>
                 <View style={styles.dialogContainer}>
                     <Text style={styles.dialogTitle}>Add Object Type</Text>
-
                     <TextInput
                         style={styles.input}
                         placeholder="Type label..."
@@ -37,7 +38,6 @@ const ObjectTypes = ({visible, setVisible, onAdd}: AddObjectTypeProps) => {
                         onChangeText={setLabel}
                         autoFocus
                     />
-
                     <View style={styles.dialogButtons}>
                         <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={handleClose}>
                             <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -52,9 +52,66 @@ const ObjectTypes = ({visible, setVisible, onAdd}: AddObjectTypeProps) => {
     );
 };
 
-export default ObjectTypes;
+const ObjectTypesTab = () => {
+    const [objectTypes, setObjectTypes] = useState<{id: number; label: string; useCount: number}[]>([]);
+    const [dialogVisible, setDialogVisible] = useState(false);
+
+    const refresh = () => getObjectTypesWithUsage().then(setObjectTypes);
+
+    useFocusEffect(useCallback(() => {
+        refresh();
+    }, []));
+
+    const handleDelete = (id: number) => deleteObjectType(id).then(refresh);
+
+    return (
+        <>
+            <AddObjectTypeModal visible={dialogVisible} setVisible={setDialogVisible} onAdd={refresh} />
+            <View style={styles.sectionHeader}>
+                <View style={styles.columnHeaders}>
+                    <Text style={styles.columnHeaderKey}>Name</Text>
+                    <Text style={styles.columnHeaderValue}>Uses</Text>
+                </View>
+            </View>
+            <KVBContainer
+                items={objectTypes.map(ot => ({id: ot.id, key: ot.label, value: String(ot.useCount)}))}
+                onBlur={() => {}}
+                onAdd={() => setDialogVisible(true)}
+                onDelete={handleDelete}
+            />
+        </>
+    );
+};
+
+export default ObjectTypesTab;
 
 const styles = StyleSheet.create({
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+    },
+    columnHeaders: {
+        flexDirection: 'row',
+        flex: 1,
+    },
+    columnHeaderKey: {
+        width: '35%',
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#999',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    columnHeaderValue: {
+        flex: 1,
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#999',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
     dialogOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',

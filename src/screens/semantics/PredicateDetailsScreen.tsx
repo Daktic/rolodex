@@ -61,7 +61,7 @@ const PredicateDetailsScreen = ({route}: Props) => {
 
     const handleIconItemPress = async (item: ItemType<number>, pickerOnPress: (val: number) => void) => {
         pickerOnPress(item.value!);
-        const icon = icons.find(i => i.id === Number(item.value)) ?? null;
+        const icon = item.value !== -1 ? (icons.find(i => i.id === item.value) ?? null) : null;
         setSelectedIcon(icon);
         setIconId(icon?.id ?? null);
         await updatePredicateIcon(predicateId, icon?.id ?? null);
@@ -92,10 +92,10 @@ const PredicateDetailsScreen = ({route}: Props) => {
         setAddModalVisible(false);
     };
 
-    const iconItems: ItemType<number>[] = icons.map(icon => ({
-        label: icon.label,
-        value: icon.id
-    }));
+    const iconItems: ItemType<number>[] = [
+        {label: 'None', value: -1},
+        ...icons.map(icon => ({label: icon.label, value: icon.id})),
+    ];
 
     return (
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -185,9 +185,11 @@ const PredicateDetailsScreen = ({route}: Props) => {
                             onPress={() => handleIconItemPress(item, onPress)}
                         >
                             <View style={styles.iconItemIcon}>
-                                {convertStringToIcon(item.label as string)}
+                                {item.value !== -1 && convertStringToIcon(item.label as string)}
                             </View>
-                            <Text style={styles.iconItemLabel}>{item.label}</Text>
+                            <Text style={[styles.iconItemLabel, item.value === -1 && styles.noneLabel]}>
+                                {item.label}
+                            </Text>
                         </TouchableOpacity>
                     )}
                 />
@@ -318,5 +320,9 @@ const styles = StyleSheet.create({
     },
     placeholderText: {
         color: '#999',
+    },
+    noneLabel: {
+        color: '#999',
+        fontStyle: 'italic',
     },
 });
