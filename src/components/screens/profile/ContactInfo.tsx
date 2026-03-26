@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import KVBContainer, { KeyValuePair } from '../../common/KVBContainer';
 import { getProfileFields, upsertProfileField, updateProfileField, deleteProfileField, getMaskFields } from '@/services/storage';
-import { Mask } from '@/types/db';
+import {Mask, ObjectType, Predicate, SemanticNode} from '@/types/db';
 import { getProfileId } from '@/services/wallet';
+import AddTriple from "@/dialogs/AddTriple";
 
 interface ContactInfoProps {
   currentMask: Mask | null;
@@ -13,6 +14,10 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
   const [fields, setFields] = useState<KeyValuePair[]>([]);
   const [maskedFieldIds, setMaskedFieldIds] = useState<Set<number>>(new Set());
   const [profileId, setProfileId] = useState<string | null>(null);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [newLabel, setNewLabel] = useState<Predicate | null>(null);
+  const [newValue, setNewValue] = useState<SemanticNode | null>(null);
+  const [newType, setNewType] = useState<ObjectType | null>(null);
 
 
   // Load profile ID on mount
@@ -95,15 +100,9 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
   };
 
   const handleAdd = async () => {
-    if (!profileId) return;
+    if (!profileId || !newLabel || !newValue) return;
     try {
-      // Generate a unique default label so multiple new fields can be added
-      let defaultKey = 'New Field';
-      let i = 1;
-      while (fields.some(f => f.key === defaultKey)) {
-        defaultKey = `New Field ${i++}`;
-      }
-      await upsertProfileField(profileId, defaultKey, 'Value', false);
+      await upsertProfileField(profileId, newLabel.label, newValue.value ?? newValue.label, false);
       const profileFields = await getProfileFields(profileId);
       setFields(profileFields.map(field => ({
         id: field.id,
@@ -113,7 +112,9 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
     } catch (error) {
       console.error("Failed to add profile field:", error);
     }
+    setShowAddDialog(false);
   };
+
 
   const handleMaskToggle = (fieldId: number, isMasked: boolean) => {
     if (!currentMask) return;
@@ -136,12 +137,22 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
         items={fields}
         onUpdate={handleUpdate}
         onDelete={handleDelete}
-        onAdd={handleAdd}
         onBlur={handleSave}
-        showAddButton={true}
         currentMask={currentMask}
         maskedFieldIds={maskedFieldIds}
         onMaskToggle={handleMaskToggle}
+        onAdd={() => setShowAddDialog(true)}
+      />
+      <AddTriple
+          visible={showAddDialog}
+          setVisible={setShowAddDialog}
+          handleAdd={handleAdd}
+          newLabel={newLabel}
+          setNewLabel={setNewLabel}
+          newValue={newValue}
+          setNewValue={setNewValue}
+          newType={newType}
+          setNewType={setNewType}
       />
     </View>
   );

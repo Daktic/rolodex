@@ -42,7 +42,7 @@ const creationStatements: Record<string, string> = {
         CREATE TABLE IF NOT EXISTS nodes (
               id INTEGER PRIMARY KEY,
               label TEXT NOT NULL,       -- "Acme Corp", "ETH Denver", "john doe"
-              value TEXT,                -- raw value if different from label
+              value TEXT NOT NULL,               -- raw value if different from label
               UNIQUE(label, value)
         )
     `,

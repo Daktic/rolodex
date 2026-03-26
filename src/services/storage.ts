@@ -85,14 +85,15 @@ async function deleteProfile(id: string): Promise<void> {
 async function upsertPredicate(label: string) {
   const db = getDatabase();
 
-  const row = await db.runAsync(
+  const row = await db.getFirstAsync<{ id: number }>(
     `INSERT INTO predicates (label)
      VALUES (?)
-     ON CONFLICT(label) DO UPDATE SET label = excluded.label`,
+     ON CONFLICT(label) DO UPDATE SET label = excluded.label
+     returning id`,
     [label]
   );
 
-  return row.lastInsertRowId;
+  return row!.id;
 }
 
 async function getAllPredicates(): Promise<Predicate[]> {
@@ -102,14 +103,15 @@ async function getAllPredicates(): Promise<Predicate[]> {
 
 async function upsertObjectType(label: string, icon?: string) {
   const db = getDatabase();
-  const row = await db.runAsync(
+  const row = await db.getFirstAsync<{ id: number }>(
     `INSERT INTO node_types (label, icon)
      VALUES (?, ?)
-     ON CONFLICT(label) DO UPDATE SET label = excluded.label`,
+     ON CONFLICT(label) DO UPDATE SET label = excluded.label
+     returning id`,
     [label, icon?? null]
   );
 
-  return row.lastInsertRowId;
+  return row!.id;
 }
 
 async function getAllObjectTypes(): Promise<ObjectType[]> {
@@ -119,21 +121,18 @@ async function getAllObjectTypes(): Promise<ObjectType[]> {
 
 async function upsertObject(label: string, value?: string) {
   const db = getDatabase();
+  const rawValue = value ?? label;
 
-  // SQLite treats NULL != NULL for UNIQUE constraints, so ON CONFLICT won't
-  // deduplicate rows where type_id or value is NULL. Use SELECT + INSERT instead.
-  const existing = await db.getFirstAsync<{ id: number }>(
-    `SELECT id FROM nodes WHERE label = ? AND value IS ?`,
-    [label, value ?? null]
-  );
-  if (existing) return existing.id;
-
-  const row = await db.runAsync(
-    `INSERT INTO nodes (label, value) VALUES (?, ?)`,
-    [label, value ?? null]
+  const row = await db.getFirstAsync<{ id: number }>(
+    `INSERT INTO nodes (label, value)
+     VALUES (?, ?)
+     ON CONFLICT(label, value) DO UPDATE 
+         SET label = excluded.label, value = excluded.value
+     returning id`,
+    [label, rawValue]
   );
 
-  return row.lastInsertRowId;
+  return row!.id;
 }
 
 const getAllNodes = async (): Promise<SemanticNode[]> => {
@@ -144,14 +143,15 @@ const getAllNodes = async (): Promise<SemanticNode[]> => {
 async function upsertTriple(subjectID: number, predicateID: number, objectID: number, createdAt?: number) {
   const db = getDatabase();
   const timestamp = createdAt || Date.now();
-  const row = await db.runAsync(
+  const row = await db.getFirstAsync<{ id: number }>(
     `INSERT INTO tipples (subject_id, predicate_id, object_id, created_at)
      VALUES (?, ?, ?, ?)
-     ON CONFLICT(subject_id, predicate_id, object_id) DO NOTHING`,
+     ON CONFLICT(subject_id, predicate_id, object_id) DO NOTHING
+     returning id`,
     [subjectID, predicateID, objectID, timestamp]
   );
 
-  return row.lastInsertRowId;
+  return row!.id;
 }
 
 // ============================================================================
@@ -347,16 +347,17 @@ async function upsertConnection(
 ): Promise<number> {
   const db = getDatabase();
   const timestamp = connectedAt || Date.now();
-  const row = await db.runAsync(
+  const row = await db.getFirstAsync<{ id: number }>(
     `INSERT INTO connections (connected_at, issuer, display_name, avatar_uri, raw_payload)
      VALUES (?, ?, ?, ?, ?)
      ON CONFLICT(issuer) DO UPDATE SET
        display_name = excluded.display_name,
        avatar_uri = excluded.avatar_uri,
-       raw_payload = excluded.raw_payload`,
+       raw_payload = excluded.raw_payload
+       returning id`,
     [timestamp, issuer, displayName, avatarUri?? null, rawPayload]
   );
-  return row.lastInsertRowId
+  return row!.id
 }
 
 async function getConnection(id: number): Promise<Connection | null> {

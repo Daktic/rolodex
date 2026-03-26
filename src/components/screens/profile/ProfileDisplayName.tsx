@@ -7,9 +7,7 @@ import {getProfileId} from "@/services/wallet";
 
 
 export default function ProfileDisplayName() {
-  const [displayNameField, setDisplayNameField] = useState<KVPair[]>([
-    { id: 'display-name', key: 'Display Name', value: '' }
-  ]);
+  const [displayNameField, setDisplayNameField] = useState<KVPair[]>([]);
   const [profileId, setProfileId] = useState<string | null>(null);
   // Load profile ID on mount
   useEffect(() => {
@@ -31,7 +29,7 @@ export default function ProfileDisplayName() {
         if (profile) {
           console.log("Setting display name to:", profile.display_name);
           setDisplayNameField([
-            { id: 'display-name', key: 'Display Name', value: profile.display_name }
+            { id:0, key: 'Display Name', value: profile.display_name }
           ]);
           console.log("Display name field updated");
         } else {
@@ -44,7 +42,7 @@ export default function ProfileDisplayName() {
     loadProfile();
   }, [profileId]);
 
-  const handleUpdate = async (id: string, key: string, value: string) => {
+  const handleUpdate = async (id: number, key: string, value: string) => {
     // Update local state
     setDisplayNameField([{ id, key, value }]);
     if (!profileId) return;
@@ -62,12 +60,13 @@ export default function ProfileDisplayName() {
   return (
     <View style={styles.container}>
       <KVBContainer
-        items={displayNameField}
-        onUpdate={handleUpdate}
-        onDelete={() => {}} // No delete for display name
-        onAdd={() => {}} // No add for display name
-        showAddButton={false}
-      />
+          items={displayNameField}
+          onDelete={() => {
+          }} // No delete for display name
+          onAdd={() => {
+          }} // No add for display name
+          showAddButton={false}
+          onBlur={handleUpdate}      />
     </View>
   );
 }
