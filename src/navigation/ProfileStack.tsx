@@ -4,7 +4,7 @@ import ShareScreen from '../screens/ShareScreen';
 
 export type ProfileStackParamList = {
   Profile: undefined;
-  Share: { maskId: string };
+  Share: { maskId: number };
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();

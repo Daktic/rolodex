@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import KVBContainer, { KeyValuePair } from '../../common/KVBContainer';
-import { getProfileFields, upsertProfileField, deleteProfileField, getMaskFields } from '@/services/storage';
-import { Mask } from '@/types/storage';
+import { getProfileFields, upsertProfileField, updateProfileField, deleteProfileField, getMaskFields } from '@/services/storage';
+import {Mask, ObjectType, Predicate, SemanticNode} from '@/types/db';
 import { getProfileId } from '@/services/wallet';
+import AddTriple from "@/dialogs/AddTriple";
+import { useFocusEffect } from '@react-navigation/native';
 
 interface ContactInfoProps {
   currentMask: Mask | null;
@@ -11,8 +13,12 @@ interface ContactInfoProps {
 
 export default function ContactInfo({ currentMask }: ContactInfoProps) {
   const [fields, setFields] = useState<KeyValuePair[]>([]);
-  const [maskedFieldIds, setMaskedFieldIds] = useState<Set<string>>(new Set());
+  const [maskedFieldIds, setMaskedFieldIds] = useState<Set<number>>(new Set());
   const [profileId, setProfileId] = useState<string | null>(null);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [newLabel, setNewLabel] = useState<Predicate | null>(null);
+  const [newValue, setNewValue] = useState<SemanticNode | null>(null);
+  const [newType, setNewType] = useState<ObjectType | null>(null);
 
 
   // Load profile ID on mount
@@ -24,25 +30,29 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
     getPID();
   }, []);
 
-  // Load profile fields when profileId is available
-  useEffect(() => {
+  // Load profile fields on focus (and whenever profileId first becomes available)
+  const loadFields = useCallback(async () => {
     if (!profileId) return;
-
-    const loadFields = async () => {
-      try {
-        const profileFields = await getProfileFields(profileId);
-        const mappedFields = profileFields.map(field => ({
-          id: field.id,
-          key: field.label,
-          value: field.value,
-        }));
-        setFields(mappedFields);
-      } catch (error) {
-        console.error("Failed to load profile fields:", error);
-      }
-    };
-    loadFields();
+    try {
+      const profileFields = await getProfileFields(profileId);
+      setFields(profileFields.map(field => ({
+        id: field.id,
+        key: field.label,
+        value: field.value,
+        icon: field.icon,
+      })));
+    } catch (error) {
+      console.error("Failed to load profile fields:", error);
+    }
   }, [profileId]);
+
+  useEffect(() => {
+    loadFields();
+  }, [loadFields]);
+
+  useFocusEffect(useCallback(() => {
+    loadFields();
+  }, [loadFields]));
 
   // Load masked fields when mask changes
   useEffect(() => {
@@ -63,24 +73,26 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
     loadMaskedFields();
   }, [currentMask]);
 
-  const handleUpdate = async (id: string, key: string, value: string) => {
+  const handleUpdate = async (id: number, key: string, value: string) => {
     // Update local state
     setFields((prev) =>
       prev.map((field) =>
         field.id === id ? { ...field, key, value } : field
       )
     );
-    if (!profileId) return;
+  };
 
+  const handleSave = async (id: number, key: string, value: string) => {
     // Save to storage
+    if (!profileId || !key.trim() || !value.trim()) return;
     try {
-      await upsertProfileField(id, profileId, key, value, true);
+      await updateProfileField(id, key, value, true);
     } catch (error) {
       console.error("Failed to update profile field:", error);
     }
-  };
+  }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     // Update local state
     setFields((prev) => prev.filter((field) => field.id !== id));
 
@@ -92,16 +104,25 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
     }
   };
 
-  const handleAdd = () => {
-    const newId = String(Date.now());
-    setFields((prev) => [
-      ...prev,
-      { id: newId, key: '', value: '' },
-    ]);
-    // Note: Field will be saved when user types (via handleUpdate)
+  const handleAdd = async () => {
+    if (!profileId || !newLabel || !newValue) return;
+    try {
+      await upsertProfileField(profileId, newLabel.label, newValue.value ?? newValue.label, false);
+      const profileFields = await getProfileFields(profileId);
+      setFields(profileFields.map(field => ({
+        id: field.id,
+        key: field.label,
+        value: field.value,
+        icon: field.icon,
+      })));
+    } catch (error) {
+      console.error("Failed to add profile field:", error);
+    }
+    setShowAddDialog(false);
   };
 
-  const handleMaskToggle = (fieldId: string, isMasked: boolean) => {
+
+  const handleMaskToggle = (fieldId: number, isMasked: boolean) => {
     if (!currentMask) return;
 
     setMaskedFieldIds(prev => {
@@ -122,11 +143,22 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
         items={fields}
         onUpdate={handleUpdate}
         onDelete={handleDelete}
-        onAdd={handleAdd}
-        showAddButton={true}
+        onBlur={handleSave}
         currentMask={currentMask}
         maskedFieldIds={maskedFieldIds}
         onMaskToggle={handleMaskToggle}
+        onAdd={() => setShowAddDialog(true)}
+      />
+      <AddTriple
+          visible={showAddDialog}
+          setVisible={setShowAddDialog}
+          handleAdd={handleAdd}
+          newLabel={newLabel}
+          setNewLabel={setNewLabel}
+          newValue={newValue}
+          setNewValue={setNewValue}
+          newType={newType}
+          setNewType={setNewType}
       />
     </View>
   );

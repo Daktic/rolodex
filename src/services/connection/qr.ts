@@ -17,48 +17,53 @@ const genName = (seed?: string | number) => {
  * @param data - The raw QR code data string
  * @returns The connection ID if successful, null otherwise
  */
-const processScannedQR = async (data: string): Promise<string | null> => {
+const processScannedQR = async (data: string): Promise<number | null> => {
   try {
     const scannedData: ExchangeV1 = JSON.parse(data);
-    console.log('Scanned QR code:', JSON.stringify(scannedData, null, 2));
-
-    // Parse the payload
-    const payload = JSON.parse(scannedData.payload);
-    const { display_name, avatar_uri, fields } = payload;
-
-    // Save connection to database
-    const connectionId = scannedData.exchangeId;
-    await upsertConnection(
-      connectionId,
-      scannedData.issuer,
-      display_name,
-      scannedData.payload,
-      avatar_uri,
-      scannedData.timestamp
-    );
-
-    // Save connection fields
-    if (fields && Array.isArray(fields)) {
-      for (const field of fields) {
-        await upsertConnectionField(
-          `${connectionId}-${field.label}`,
-          connectionId,
-          field.label,
-          field.value
-        );
-      }
-    }
-
-    console.log('Connection saved successfully!');
-    return connectionId;
+    return parseExchangeV1(scannedData);
   } catch {
     try {
+      console.log('Attempting to parse external QR code:', data);
       return await parseExternalQRCode(data) ?? null;
     } catch (error) {
       console.error('Failed to process QR code:', error);
     }
     return null;
   }
+};
+
+const parseExchangeV1 = async (scannedData: ExchangeV1) => {
+  console.log('Scanned QR code:', JSON.stringify(scannedData, null, 2));
+
+  // Parse the payload
+  const payload = JSON.parse(scannedData.payload);
+  const { display_name, avatar_uri, fields } = payload;
+
+  // Save connection to database
+  const connectionId = await upsertConnection(
+      scannedData.issuer,
+      display_name,
+      scannedData.payload,
+      avatar_uri,
+      scannedData.timestamp
+  );
+
+  console.log('upsertConnection saved successfully!', {connectionId, display_name, avatar_uri, fields});
+
+  // Save connection fields
+  if (fields && Array.isArray(fields)) {
+    for (const field of fields) {
+      await upsertConnectionField(
+          connectionId,
+          field.label,
+          field.value
+      );
+      console.log('upsertConnectionField saved successfully', {connectionId, label: field.label, value: field.value});
+    }
+  }
+
+  console.log('Connection saved successfully!');
+  return connectionId;
 };
 
 const parseExternalQRCode = (data: string) => {
@@ -74,10 +79,9 @@ const parseExternalQRCode = (data: string) => {
         url: string
       }
   ) => {
-    const connectionID = `${connectionType}-${userName}`;
-    await upsertConnection(
-        connectionID,
-        null,
+    const issuer = `${connectionType}-${userName}`;
+    const connectionID = await upsertConnection(
+        issuer,
         userName,
         JSON.stringify({
           "display_name": userName,
@@ -89,9 +93,7 @@ const parseExternalQRCode = (data: string) => {
           ]
         })
     )
-    const annotationID = `annotation-${connectionType}-${userName}`;
     await upsertAnnotation(
-        annotationID,
         connectionID,
         "Social",
         connectionType,

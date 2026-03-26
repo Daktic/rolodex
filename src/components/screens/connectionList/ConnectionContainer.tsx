@@ -1,14 +1,14 @@
 import { useRef } from 'react';
 import { StyleSheet, View, Pressable, Text, Alert, Animated } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
-import { Connection, ConnectionField } from '@/types/storage';
+import { Connection, ConnectionField } from '@/types/db';
 import ConnectionContact from './ConnectionContact';
 
 interface ConnectionContainerProps {
   connection: Connection;
   fields: ConnectionField[];
   onPress: (connection: Connection) => void;
-  onDelete: (connectionId: string) => void;
+  onDelete: (connectionId: number) => void;
   onShare?: (connection: Connection) => void;
 }
 

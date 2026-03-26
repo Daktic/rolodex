@@ -1,6 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import { privateKeyToAccount } from 'viem/accounts';
 import { generatePrivateKey } from 'viem/accounts';
+import {upsertProfile} from "@/services/storage";
 
 // In-memory cache to ensure wallet consistency during app session
 let cachedWallet: ReturnType<typeof privateKeyToAccount> | null = null;
@@ -14,6 +15,8 @@ const generateWallet = async () => {
     const privateKey = generatePrivateKey();
     await SecureStore.setItemAsync('WALLET_PRIVATE_KEY', privateKey);
     cachedWallet = privateKeyToAccount(privateKey);
+    // If we generate a new wallet, we need to create a new profile
+    await upsertProfile(cachedWallet.address, "User");
     console.log("generateWallet: Created new wallet with address:", cachedWallet.address);
     return cachedWallet;
 };
@@ -42,6 +45,7 @@ const getOrCreateWallet = async () => {
             const account = privateKeyToAccount(existingKey as `0x${string}`);
             console.log("getOrCreateWallet: Loaded existing wallet with address:", account.address);
             cachedWallet = account;
+            await upsertProfile(account.address, "User");
             return account;
         }
 

@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, TextInput, Pressable, Alert, Animated } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
-import { Mask } from '@/types/storage';
+import { Mask } from '@/types/db';
 import { setMaskFields, getMaskFields } from '@/services/storage';
+import {convertStringToIcon} from "@/utils/icons";
 
 interface KeyValueBoxProps {
   initialKey?: string;
@@ -11,12 +12,15 @@ interface KeyValueBoxProps {
   valueEditable?: boolean;
   onKeyChange?: (key: string) => void;
   onValueChange?: (value: string) => void;
+  onPress?: () => void;
   onLongPress?: () => void;
+  onBlur?: (key: string, value: string) => void;
   onDelete?: () => void;
   currentMask?: Mask | null;
-  fieldId?: string;
+  fieldId?: number;
   isMasked?: boolean;
-  onMaskToggle?: (fieldId: string, isMasked: boolean) => void;
+  onMaskToggle?: (fieldId: number, isMasked: boolean) => void;
+  nubIcon?: string;
 }
 
 export default function KeyValueBox({
@@ -26,16 +30,35 @@ export default function KeyValueBox({
   valueEditable = false,
   onKeyChange,
   onValueChange,
+  onPress,
   onLongPress,
+  onBlur,
   onDelete,
   currentMask,
   fieldId,
   isMasked = false,
   onMaskToggle,
+  nubIcon,
 }: KeyValueBoxProps) {
   const [key, setKey] = useState(initialKey);
   const [value, setValue] = useState(initialValue);
+  const [expanded, setExpanded] = useState(false);
+  const [valueWidth, setValueWidth] = useState(0);
+  const [labelMasked, setLabelMasked] = useState(isMasked);
+  const maskAnim = useRef(new Animated.Value(isMasked ? 0 : 400)).current;
   const swipeableRef = useRef<Swipeable>(null);
+
+  useEffect(() => {
+    if (valueWidth === 0) return;
+    Animated.timing(maskAnim, {
+      toValue: isMasked ? 0 : valueWidth,
+      duration: isMasked ? 400 : 300,
+      useNativeDriver: true,
+    }).start();
+    // delay label flip until swipeable has closed
+    const timer = setTimeout(() => setLabelMasked(isMasked), 400);
+    return () => clearTimeout(timer);
+  }, [isMasked, valueWidth]);
 
   // Update local state when props change
   useEffect(() => {
@@ -56,16 +79,26 @@ export default function KeyValueBox({
     onValueChange?.(newValue);
   };
 
+  const handleBlur = () => {
+    if (key.trim() && value.trim()) {
+      onBlur?.(key, value);
+    }
+  };
+
   const handleDelete = () => {
     if (isMasked) {
-      // Don't allow deletion of blurred fields
+      swipeableRef.current?.close();
       return;
     }
     Alert.alert(
       'Delete Field',
       `Are you sure you want to delete "${key || 'this field'}"?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+          onPress: () => swipeableRef.current?.close(),
+        },
         {
           text: 'Delete',
           style: 'destructive',
@@ -91,7 +124,7 @@ export default function KeyValueBox({
       const currentMaskFields = await getMaskFields(currentMask.id);
       const currentFieldIds = currentMaskFields.map(f => f.id);
 
-      let updatedFieldIds: string[];
+      let updatedFieldIds: number[];
       if (newMaskedState) {
         // Add field to mask
         updatedFieldIds = [...currentFieldIds, fieldId];
@@ -112,111 +145,136 @@ export default function KeyValueBox({
   };
 
   const renderLeftActions = () => {
-    // Invisible action area that triggers mask/unmask
-    return <View style={{ width: 80 }} />;
+    return (
+      <View style={styles.maskButton}>
+        <Text style={styles.maskText}>{labelMasked ? 'Unmask' : 'Mask'}</Text>
+      </View>
+    );
   };
 
-  const renderRightActions = (
-    progress: Animated.AnimatedInterpolation<number>,
-    dragX: Animated.AnimatedInterpolation<number>
-  ) => {
-    const trans = dragX.interpolate({
-      inputRange: [-80, 0],
-      outputRange: [0, 80],
-      extrapolate: 'clamp',
-    });
-
+  const renderRightActions = () => {
     return (
-      <Animated.View
-        style={[
-          styles.deleteContainer,
-          { transform: [{ translateX: trans }] },
-        ]}
-      >
-        <Pressable
-          style={[styles.deleteButton, isMasked && styles.deleteButtonDisabled]}
-          onPress={handleDelete}
-        >
-          <Text style={styles.deleteText}>Delete</Text>
-        </Pressable>
-      </Animated.View>
+      <View style={[styles.deleteButton, isMasked && styles.deleteButtonDisabled]}>
+        <Text style={styles.deleteText}>Delete</Text>
+      </View>
     );
   };
 
   return (
-    <Swipeable
-      ref={swipeableRef}
-      renderLeftActions={renderLeftActions}
-      renderRightActions={onDelete ? renderRightActions : undefined}
-      overshootLeft={false}
-      overshootRight={false}
-      onSwipeableOpen={(direction) => {
-        if (direction === 'left') {
-          handleSwipeRight();
-        }
-      }}
-    >
-      <Pressable
-        style={styles.container}
-        onPress={onLongPress}
+    <View style={styles.outerContainer}>
+      <Swipeable
+        ref={swipeableRef}
+        renderLeftActions={onMaskToggle ? renderLeftActions : undefined}
+        renderRightActions={onDelete ? renderRightActions : undefined}
+        overshootLeft={false}
+        overshootRight={false}
+        onSwipeableOpen={(direction) => {
+          if (direction === 'left') {
+            handleSwipeRight();
+          }
+          if (direction === 'right') {
+            handleDelete();
+          }
+        }}
       >
-        <View style={styles.keyContainer}>
-          {keyEditable && !isMasked ? (
-            <TextInput
-              style={styles.keyInput}
-              value={key}
-              onChangeText={handleKeyChange}
-              placeholder="Key"
-              placeholderTextColor="#999"
-            />
-          ) : (
-            <Text style={styles.keyText}>{key || 'Key'}</Text>
-          )}
-        </View>
+        <Pressable
+          style={styles.container}
+          onPress={onPress ?? (() => setExpanded(e => !e))}
+          onLongPress={onLongPress}
+        >
 
-        <View style={[styles.valueContainer, isMasked && styles.blurredValue]}>
-          {isMasked ? (
-            <Text style={styles.maskedText}>Masked</Text>
-          ) : valueEditable ? (
-            <TextInput
-              style={styles.valueInput}
-              value={value}
-              onChangeText={handleValueChange}
-              placeholder="Value"
-              placeholderTextColor="#999"
-            />
-          ) : (
-            <Text style={styles.valueText}>
-              {value || 'Value'}
-            </Text>
-          )}
-        </View>
-      </Pressable>
-    </Swipeable>
+          <View style={styles.keyContainer}>
+            {nubIcon && (
+              <View style={styles.keyIconSection}>
+                {convertStringToIcon(nubIcon)}
+              </View>
+            )}
+            <View style={styles.keyTextSection}>
+              <Text style={styles.keyText} numberOfLines={expanded ? undefined : 1} ellipsizeMode="tail">
+                {key || 'Key'}
+              </Text>
+            </View>
+          </View>
+
+          <View
+            style={styles.valueContainer}
+            onLayout={(e) => {
+              const w = e.nativeEvent.layout.width;
+              if (valueWidth === 0) maskAnim.setValue(isMasked ? 0 : w);
+              setValueWidth(w);
+            }}
+          >
+            {valueEditable ? (
+              <TextInput
+                style={styles.valueInput}
+                value={value}
+                onChangeText={handleValueChange}
+                onBlur={handleBlur}
+                placeholder="Value"
+                placeholderTextColor="#999"
+              />
+            ) : (
+              <Text style={styles.valueText} numberOfLines={expanded ? undefined : 1} ellipsizeMode="tail">
+                {value || 'Value'}
+              </Text>
+            )}
+            <Animated.View style={[styles.maskOverlay, { transform: [{ translateX: maskAnim }] }]}>
+              <Text style={styles.maskedText}>Masked</Text>
+            </Animated.View>
+          </View>
+
+        </Pressable>
+      </Swipeable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  outerContainer: {
+    marginBottom: 12,
+    width: '100%',
+  },
   container: {
     flexDirection: 'row',
     borderWidth: 1,
     borderColor: '#e0e0e0',
     borderRadius: 8,
     overflow: 'hidden',
-    marginBottom: 12,
     backgroundColor: '#fff',
   },
   keyContainer: {
-    flex: 1,
+    width: '35%',
+    flexDirection: 'row',
     backgroundColor: '#f8f8f8',
-    padding: 12,
     borderRightWidth: 1,
     borderRightColor: '#e0e0e0',
   },
+  keyIconSection: {
+    width: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  keyTextSection: {
+    flex: 1,
+    padding: 12,
+    justifyContent: 'center',
+  },
   valueContainer: {
-    flex: 2,
+    flex: 1,
     backgroundColor: '#fff',
     padding: 12,
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  maskOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
   },
   keyInput: {
     fontSize: 14,
@@ -224,29 +282,40 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   keyText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#333',
+    color: '#555',
   },
   valueInput: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#333',
   },
   valueText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#333',
   },
-  deleteContainer: {
+  maskButton: {
+    backgroundColor: '#000',
     justifyContent: 'center',
-    alignItems: 'flex-end',
-    marginBottom: 12,
+    alignItems: 'center',
+    width: 80,
+    marginRight: -8,
+    paddingRight: 8,
+    borderTopLeftRadius: 8,
+    borderBottomLeftRadius: 8,
+  },
+  maskText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
   },
   deleteButton: {
     backgroundColor: '#ff3b30',
     justifyContent: 'center',
     alignItems: 'center',
     width: 80,
-    height: '100%',
+    marginLeft: -8,
+    paddingLeft: 8,
     borderTopRightRadius: 8,
     borderBottomRightRadius: 8,
   },
@@ -257,14 +326,6 @@ const styles = StyleSheet.create({
   },
   deleteButtonDisabled: {
     backgroundColor: '#ccc',
-  },
-  blurredValue: {
-    backgroundColor: 'rgba(0, 0, 0, 0.85)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 5,
   },
   maskedText: {
     fontSize: 14,

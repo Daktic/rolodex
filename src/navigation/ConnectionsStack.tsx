@@ -4,7 +4,7 @@ import ConnectionDetailScreen from '../screens/ConnectionDetailScreen';
 
 export type ConnectionsStackParamList = {
   ConnectionsList: undefined;
-  ConnectionDetail: { connectionId: string };
+  ConnectionDetail: { connectionId: number };
   ConnectViaScreen: undefined;
 };
 
