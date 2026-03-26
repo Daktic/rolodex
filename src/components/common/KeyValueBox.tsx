@@ -162,7 +162,7 @@ export default function KeyValueBox({
     <View style={styles.outerContainer}>
       <Swipeable
         ref={swipeableRef}
-        renderLeftActions={renderLeftActions}
+        renderLeftActions={onMaskToggle ? renderLeftActions : undefined}
         renderRightActions={onDelete ? renderRightActions : undefined}
         overshootLeft={false}
         overshootRight={false}

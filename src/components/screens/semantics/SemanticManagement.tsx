@@ -1,7 +1,7 @@
 import {Animated, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View} from "react-native";
 import {useEffect, useRef, useState} from "react";
 import {Predicates} from "@/types/db";
-import {getAllPredicateObjects, getObjectTypesWithUsage} from "@/services/storage";
+import {deleteObjectType, deletePredicate, getAllPredicateObjects, getObjectTypesWithUsage} from "@/services/storage";
 import KVBContainer from "@/components/common/KVBContainer";
 import ObjectTypes from "@/components/screens/semantics/ObjectTypes";
 import PredicatesDialog from "@/components/screens/semantics/Predicates";
@@ -88,6 +88,7 @@ const SemanticManagement = () => {
                             }))}
                             onBlur={() => {}}
                             onAdd={() => setPredicateDialogVisible(true)}
+                            onDelete={(id) => deletePredicate(id).then(refresh)}
                         />
                     </View>
 
@@ -103,6 +104,7 @@ const SemanticManagement = () => {
                             items={objectTypes.map(ot => ({id: ot.id, key: ot.label, value: String(ot.useCount)}))}
                             onBlur={() => {}}
                             onAdd={() => setObjectTypeDialogVisible(true)}
+                            onDelete={(id) => deleteObjectType(id).then(refresh)}
                         />
                     </View>
 
