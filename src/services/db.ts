@@ -144,9 +144,10 @@ const insertionStatements: Record<string, string> = {
 
         -- Icons
         INSERT INTO icons (label) VALUES
-            ('Telegram'), ('LinkedIn'), ('X'),
+            ('Telegram'), ('X'),
             ('Facebook'), ('Whatsapp'), ('GitHub'),
-            ('Substack'), ('Website')
+            ('Substack'), ('Globe'), ('Handshake'), 
+            ('Ban')
         ON CONFLICT(label) DO NOTHING;
 
         -- Object Types
