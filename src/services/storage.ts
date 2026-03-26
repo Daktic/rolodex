@@ -117,6 +117,45 @@ async function upsertObjectType(label: string) {
   return row!.id;
 }
 
+async function getPredicateById(id: number): Promise<{ id: number; label: string; icon_id: number | null; iconName: string | null }> {
+  const db = getDatabase();
+  const row = await db.getFirstAsync<{ id: number; label: string; icon_id: number | null; iconName: string | null }>(
+    `SELECT predicates.id, predicates.label, predicates.icon_id, icons.label as iconName
+     FROM predicates LEFT JOIN icons ON predicates.icon_id = icons.id
+     WHERE predicates.id = ?`,
+    [id]
+  );
+  return row!;
+}
+
+async function getPredicateObjectTypes(predicateId: number): Promise<ObjectType[]> {
+  const db = getDatabase();
+  return await db.getAllAsync<ObjectType>(
+    `SELECT object_types.id, object_types.label FROM object_types
+     JOIN predicate_object_types ON object_types.id = predicate_object_types.object_type_id
+     WHERE predicate_object_types.predicate_id = ?`,
+    [predicateId]
+  );
+}
+
+async function updatePredicateLabel(id: number, label: string): Promise<void> {
+  const db = getDatabase();
+  await db.runAsync(`UPDATE predicates SET label = ? WHERE id = ?`, [label, id]);
+}
+
+async function updatePredicateIcon(id: number, iconId: number | null): Promise<void> {
+  const db = getDatabase();
+  await db.runAsync(`UPDATE predicates SET icon_id = ? WHERE id = ?`, [iconId, id]);
+}
+
+async function deletePredicateObjectType(predicateId: number, objectTypeId: number): Promise<void> {
+  const db = getDatabase();
+  await db.runAsync(
+    `DELETE FROM predicate_object_types WHERE predicate_id = ? AND object_type_id = ?`,
+    [predicateId, objectTypeId]
+  );
+}
+
 async function deleteObjectType(id: number): Promise<void> {
   const db = getDatabase();
   await db.runAsync(`DELETE FROM object_types WHERE id = ?`, [id]);
@@ -595,6 +634,11 @@ export {
   deleteAnnotation,
   // Semantic
     getAllPredicates,
+    getPredicateById,
+    getPredicateObjectTypes,
+    updatePredicateLabel,
+    updatePredicateIcon,
+    deletePredicateObjectType,
     getAllObjectTypes,
     getAllNodes,
     getAllPredicateObjects,

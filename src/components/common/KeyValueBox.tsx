@@ -12,6 +12,7 @@ interface KeyValueBoxProps {
   valueEditable?: boolean;
   onKeyChange?: (key: string) => void;
   onValueChange?: (value: string) => void;
+  onPress?: () => void;
   onLongPress?: () => void;
   onBlur?: (key: string, value: string) => void;
   onDelete?: () => void;
@@ -29,6 +30,7 @@ export default function KeyValueBox({
   valueEditable = false,
   onKeyChange,
   onValueChange,
+  onPress,
   onLongPress,
   onBlur,
   onDelete,
@@ -177,7 +179,7 @@ export default function KeyValueBox({
       >
         <Pressable
           style={styles.container}
-          onPress={() => setExpanded(e => !e)}
+          onPress={onPress ?? (() => setExpanded(e => !e))}
           onLongPress={onLongPress}
         >
 

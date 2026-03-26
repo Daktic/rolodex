@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import KVBContainer, { KeyValuePair } from '../../common/KVBContainer';
 import { getProfileFields, upsertProfileField, updateProfileField, deleteProfileField, getMaskFields } from '@/services/storage';
 import {Mask, ObjectType, Predicate, SemanticNode} from '@/types/db';
 import { getProfileId } from '@/services/wallet';
 import AddTriple from "@/dialogs/AddTriple";
+import { useFocusEffect } from '@react-navigation/native';
 
 interface ContactInfoProps {
   currentMask: Mask | null;
@@ -29,27 +30,29 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
     getPID();
   }, []);
 
-  // Load profile fields when profileId is available
-  useEffect(() => {
+  // Load profile fields on focus (and whenever profileId first becomes available)
+  const loadFields = useCallback(async () => {
     if (!profileId) return;
-
-    const loadFields = async () => {
-      try {
-        const profileFields = await getProfileFields(profileId);
-        const mappedFields = profileFields.map(field => ({
-          id: field.id,
-          key: field.label,
-          value: field.value,
-          icon: field.icon,
-        }));
-        setFields(mappedFields);
-        console.log("Loaded profile fields:", mappedFields);
-      } catch (error) {
-        console.error("Failed to load profile fields:", error);
-      }
-    };
-    loadFields();
+    try {
+      const profileFields = await getProfileFields(profileId);
+      setFields(profileFields.map(field => ({
+        id: field.id,
+        key: field.label,
+        value: field.value,
+        icon: field.icon,
+      })));
+    } catch (error) {
+      console.error("Failed to load profile fields:", error);
+    }
   }, [profileId]);
+
+  useEffect(() => {
+    loadFields();
+  }, [loadFields]);
+
+  useFocusEffect(useCallback(() => {
+    loadFields();
+  }, [loadFields]));
 
   // Load masked fields when mask changes
   useEffect(() => {

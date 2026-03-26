@@ -1,10 +1,11 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import SemanticsScreen from "@/screens/SemanticsScreen";
+import SemanticsScreen from "@/screens/semantics/SemanticsScreen";
+import PredicateDetailsScreen from "@/screens/semantics/PredicateDetailsScreen";
 
 
 export type SemanticStackParamList = {
     Semantics: undefined;
-    Share: { maskId: number };
+    PredicateDetail: { predicateId: number };
 };
 
 const Stack = createNativeStackNavigator<SemanticStackParamList>();
@@ -16,6 +17,11 @@ export default function SemanticsStack() {
                 name="Semantics"
                 component={SemanticsScreen}
                 options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="PredicateDetail"
+                component={PredicateDetailsScreen}
+                options={{ headerShown: true, title: 'All Predicates' }}
             />
         </Stack.Navigator>
     );

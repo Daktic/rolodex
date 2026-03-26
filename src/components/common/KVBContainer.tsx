@@ -16,6 +16,7 @@ interface KVBContainerProps {
   onDelete?: (id: number) => void;
   onAdd?: () => void;
   onBlur: (id: number, key: string, value: string) => void;
+  onItemPress?: (id: number) => void;
   showAddButton?: boolean;
   currentMask?: Mask | null;
   maskedFieldIds?: Set<number>;
@@ -28,6 +29,7 @@ export default function KVBContainer({
   onDelete,
   onAdd,
   onBlur,
+  onItemPress,
   showAddButton = true,
   currentMask,
   maskedFieldIds = new Set(),
@@ -77,6 +79,7 @@ export default function KVBContainer({
             onKeyChange={(newKey) => handleKeyChange(item.id, newKey)}
             onValueChange={(newValue) => handleValueChange(item.id, newValue)}
             onBlur={(key, value) => onBlur(item.id, key, value)}
+            onPress={onItemPress ? () => onItemPress(item.id) : undefined}
             onLongPress={() => handleLongPress(item.id)}
             onDelete={onDelete ? () => handleDelete(item.id) : undefined}
             currentMask={currentMask}

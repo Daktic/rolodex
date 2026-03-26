@@ -1,5 +1,8 @@
 import {Animated, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View} from "react-native";
-import {useEffect, useRef, useState} from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
+import {useFocusEffect, useNavigation} from "@react-navigation/native";
+import {NativeStackNavigationProp} from "@react-navigation/native-stack";
+import {SemanticStackParamList} from "@/navigation/SemanticsStack";
 import {Predicates} from "@/types/db";
 import {deleteObjectType, deletePredicate, getAllPredicateObjects, getObjectTypesWithUsage} from "@/services/storage";
 import KVBContainer from "@/components/common/KVBContainer";
@@ -8,6 +11,7 @@ import PredicatesDialog from "@/components/screens/semantics/Predicates";
 
 const SemanticManagement = () => {
     const {width} = useWindowDimensions();
+    const navigation = useNavigation<NativeStackNavigationProp<SemanticStackParamList>>();
     const [activeTab, setActiveTab] = useState<0 | 1>(0);
     const translateX = useRef(new Animated.Value(0)).current;
 
@@ -21,9 +25,9 @@ const SemanticManagement = () => {
         getAllPredicateObjects().then(setPredicateObjects);
     };
 
-    useEffect(() => {
+    useFocusEffect(useCallback(() => {
         refresh();
-    }, []);
+    }, []));
 
     const switchTab = (tab: 0 | 1) => {
         setActiveTab(tab);
@@ -32,7 +36,13 @@ const SemanticManagement = () => {
             duration: 250,
             useNativeDriver: true,
         }).start();
+        refresh();
     };
+
+    const handleDeleteObject = (id: number) => {
+        console.log("Deleting object type with id:", id);
+        deleteObjectType(id).then(refresh)
+    }
 
     return (
         <View style={styles.container}>
@@ -89,6 +99,7 @@ const SemanticManagement = () => {
                             onBlur={() => {}}
                             onAdd={() => setPredicateDialogVisible(true)}
                             onDelete={(id) => deletePredicate(id).then(refresh)}
+                            onItemPress={(id: number) => navigation.navigate('PredicateDetail', { predicateId: id })}
                         />
                     </View>
 
@@ -104,7 +115,7 @@ const SemanticManagement = () => {
                             items={objectTypes.map(ot => ({id: ot.id, key: ot.label, value: String(ot.useCount)}))}
                             onBlur={() => {}}
                             onAdd={() => setObjectTypeDialogVisible(true)}
-                            onDelete={(id) => deleteObjectType(id).then(refresh)}
+                            onDelete={handleDeleteObject}
                         />
                     </View>
 

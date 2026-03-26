@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { StyleSheet, View, TouchableOpacity, Text, TextInput, Alert, Animated, Pressable } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
+import { useFocusEffect } from '@react-navigation/native';
 import { getConnectionFields, getAnnotations, upsertAnnotation, deleteAnnotation } from '@/services/storage';
 import AddTriple from "@/dialogs/AddTriple";
 import {SemanticNode, ObjectType, Predicate} from "@/types/db";
@@ -28,6 +29,10 @@ export default function Attributions({ connectionId }: AttributionsProps) {
   useEffect(() => {
     loadAttributions();
   }, [connectionId]);
+
+  useFocusEffect(useCallback(() => {
+    loadAttributions();
+  }, [connectionId]));
 
   const loadAttributions = async () => {
     try {
