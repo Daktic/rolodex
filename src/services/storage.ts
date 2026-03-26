@@ -147,6 +147,20 @@ async function getAllObjectTypes(): Promise<ObjectType[]> {
     return await db.getAllAsync<ObjectType>("SELECT * FROM object_types");
 }
 
+async function getObjectTypesWithUsage(): Promise<{ id: number; label: string; useCount: number }[]> {
+    const db = getDatabase();
+    return await db.getAllAsync(
+        `SELECT
+            object_types.id,
+            object_types.label,
+            COUNT(predicate_object_types.predicate_id) as useCount
+        FROM object_types
+        LEFT JOIN predicate_object_types ON object_types.id = predicate_object_types.object_type_id
+        GROUP BY object_types.id
+        ORDER BY object_types.label ASC`
+    );
+}
+
 async function upsertPredicateObjectType(predicateId: number, objectTypeId: number): Promise<void> {
     const db = getDatabase();
     await db.runAsync(
@@ -579,4 +593,5 @@ export {
     upsertPredicateObjectType,
     upsertIcon,
     getAllIcons,
+    getObjectTypesWithUsage,
 };

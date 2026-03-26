@@ -10,7 +10,7 @@ interface AddPredicateProps {
     onAdd: () => void;
 }
 
-const AddPredicate = ({visible, setVisible, onAdd}: AddPredicateProps) => {
+const Predicates = ({visible, setVisible, onAdd}: AddPredicateProps) => {
     const [predicates, setPredicates] = useState<Predicate[]>([]);
     const [labelItems, setLabelItems] = useState<ItemType<number>[]>([]);
     const [labelOpen, setLabelOpen] = useState(false);
@@ -91,7 +91,7 @@ const AddPredicate = ({visible, setVisible, onAdd}: AddPredicateProps) => {
     );
 };
 
-export default AddPredicate;
+export default Predicates;
 
 const styles = StyleSheet.create({
     dialogOverlay: {

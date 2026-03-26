@@ -1,6 +1,6 @@
 
 import {StyleSheet, ScrollView, Text, View} from 'react-native';
-import NodeType from "@/components/screens/semantics/NodeType";
+import SemanticManagement from "@/components/screens/semantics/SemanticManagement";
 
 
 export default function SemanticsScreen() {
@@ -11,7 +11,7 @@ export default function SemanticsScreen() {
             <View style={styles.header}>
                 <Text style={styles.title}>Semantics</Text>
             </View>
-            <NodeType />
+            <SemanticManagement />
         </ScrollView>
     );
 }
