@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, TextInput, Pressable, Alert } from 'react-native';
+import { StyleSheet, Text, View, TextInput, Pressable, Alert, Animated } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { Mask } from '@/types/db';
 import { setMaskFields, getMaskFields } from '@/services/storage';
@@ -41,7 +41,22 @@ export default function KeyValueBox({
   const [key, setKey] = useState(initialKey);
   const [value, setValue] = useState(initialValue);
   const [expanded, setExpanded] = useState(false);
+  const [valueWidth, setValueWidth] = useState(0);
+  const [labelMasked, setLabelMasked] = useState(isMasked);
+  const maskAnim = useRef(new Animated.Value(isMasked ? 0 : 400)).current;
   const swipeableRef = useRef<Swipeable>(null);
+
+  useEffect(() => {
+    if (valueWidth === 0) return;
+    Animated.timing(maskAnim, {
+      toValue: isMasked ? 0 : valueWidth,
+      duration: isMasked ? 400 : 300,
+      useNativeDriver: true,
+    }).start();
+    // delay label flip until swipeable has closed
+    const timer = setTimeout(() => setLabelMasked(isMasked), 400);
+    return () => clearTimeout(timer);
+  }, [isMasked, valueWidth]);
 
   // Update local state when props change
   useEffect(() => {
@@ -128,8 +143,11 @@ export default function KeyValueBox({
   };
 
   const renderLeftActions = () => {
-    // Invisible action area that triggers mask/unmask
-    return <View style={{ width: 80 }} />;
+    return (
+      <View style={styles.maskButton}>
+        <Text style={styles.maskText}>{labelMasked ? 'Unmask' : 'Mask'}</Text>
+      </View>
+    );
   };
 
   const renderRightActions = () => {
@@ -176,10 +194,15 @@ export default function KeyValueBox({
             </View>
           </View>
 
-          <View style={[styles.valueContainer, isMasked && styles.blurredValue]}>
-            {isMasked ? (
-              <Text style={styles.maskedText}>Masked</Text>
-            ) : valueEditable ? (
+          <View
+            style={styles.valueContainer}
+            onLayout={(e) => {
+              const w = e.nativeEvent.layout.width;
+              if (valueWidth === 0) maskAnim.setValue(isMasked ? 0 : w);
+              setValueWidth(w);
+            }}
+          >
+            {valueEditable ? (
               <TextInput
                 style={styles.valueInput}
                 value={value}
@@ -193,6 +216,9 @@ export default function KeyValueBox({
                 {value || 'Value'}
               </Text>
             )}
+            <Animated.View style={[styles.maskOverlay, { transform: [{ translateX: maskAnim }] }]}>
+              <Text style={styles.maskedText}>Masked</Text>
+            </Animated.View>
           </View>
 
         </Pressable>
@@ -236,6 +262,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 12,
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  maskOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
   },
   keyInput: {
     fontSize: 14,
@@ -255,6 +292,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#333',
   },
+  maskButton: {
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    marginRight: -8,
+    paddingRight: 8,
+    borderTopLeftRadius: 8,
+    borderBottomLeftRadius: 8,
+  },
+  maskText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
+  },
   deleteButton: {
     backgroundColor: '#ff3b30',
     justifyContent: 'center',
@@ -272,14 +324,6 @@ const styles = StyleSheet.create({
   },
   deleteButtonDisabled: {
     backgroundColor: '#ccc',
-  },
-  blurredValue: {
-    backgroundColor: 'rgba(0, 0, 0, 0.85)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 5,
   },
   maskedText: {
     fontSize: 14,
