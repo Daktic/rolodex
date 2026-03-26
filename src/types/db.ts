@@ -33,6 +33,12 @@ export interface Triple {
   created_at: number;
 }
 
+export interface Predicates {
+  label: string;
+  objectLabel: string;
+  icon?: string;
+}
+
 export interface ProfileField {
   id: number;
   profile_id: string;

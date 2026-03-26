@@ -5,7 +5,7 @@ import {
     Connection,
     ConnectionField,
     ProfileFields,
-    AnnotationField, Predicate, ObjectType, SemanticNode
+    AnnotationField, Predicate, ObjectType, SemanticNode, Predicates
 } from "@/types/db";
 import {getDatabase} from "@/services/db";
 
@@ -117,6 +117,18 @@ async function upsertObjectType(label: string, icon?: string) {
 async function getAllObjectTypes(): Promise<ObjectType[]> {
     const db = getDatabase();
     return await db.getAllAsync<ObjectType>("SELECT * FROM node_types");
+}
+
+async function getAllPredicateObjects(): Promise<Predicates[]> {
+    const db = getDatabase();
+    return await db.getAllAsync<Predicates>(
+        `SELECT
+            predicates.label,
+            object_types.label as objectLabel,
+            object_types.icon
+        FROM predicates
+        LEFT JOIN object_types ON predicates.object_type_id = object_types.id`
+    )
 }
 
 async function upsertObject(label: string, value?: string) {
@@ -516,4 +528,7 @@ export {
     getAllPredicates,
     getAllObjectTypes,
     getAllNodes,
+    getAllPredicateObjects,
+    upsertPredicate,
+    upsertObjectType,
 };

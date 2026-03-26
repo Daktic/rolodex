@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, TextInput, Pressable, Alert, Animated } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { Mask } from '@/types/db';
@@ -18,6 +18,7 @@ interface KeyValueBoxProps {
   fieldId?: number;
   isMasked?: boolean;
   onMaskToggle?: (fieldId: number, isMasked: boolean) => void;
+  nubIcon?: React.ReactNode;
 }
 
 export default function KeyValueBox({
@@ -34,6 +35,7 @@ export default function KeyValueBox({
   fieldId,
   isMasked = false,
   onMaskToggle,
+  nubIcon,
 }: KeyValueBoxProps) {
   const [key, setKey] = useState(initialKey);
   const [value, setValue] = useState(initialValue);
@@ -152,6 +154,11 @@ export default function KeyValueBox({
   };
 
   return (
+    <View style={styles.outerContainer}>
+      <View style={styles.nub}>
+        {nubIcon ?? null}
+      </View>
+    <View style={styles.swipeableContent}>
     <Swipeable
       ref={swipeableRef}
       renderLeftActions={renderLeftActions}
@@ -203,17 +210,37 @@ export default function KeyValueBox({
         </View>
       </Pressable>
     </Swipeable>
+    </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  outerContainer: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    alignItems: 'stretch',
+    width: '100%',
+  },
+  nub: {
+    width: 28,
+    backgroundColor: '#e8e8e8',
+    borderTopLeftRadius: 14,
+    borderBottomLeftRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  swipeableContent: {
+    flex: 1,
+  },
   container: {
+    flex: 1,
     flexDirection: 'row',
     borderWidth: 1,
     borderColor: '#e0e0e0',
-    borderRadius: 8,
+    borderTopRightRadius: 8,
+    borderBottomRightRadius: 8,
     overflow: 'hidden',
-    marginBottom: 12,
     backgroundColor: '#fff',
   },
   keyContainer: {
