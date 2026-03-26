@@ -7,6 +7,7 @@ export interface KeyValuePair {
   id: number;
   key: string;
   value: string;
+  icon?: string;
 }
 
 interface KVBContainerProps {
@@ -82,6 +83,7 @@ export default function KVBContainer({
             fieldId={item.id}
             isMasked={isMasked}
             onMaskToggle={onMaskToggle}
+            nubIcon={item.icon}
           />
         );
       })}

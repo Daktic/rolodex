@@ -40,8 +40,10 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
           id: field.id,
           key: field.label,
           value: field.value,
+          icon: field.icon,
         }));
         setFields(mappedFields);
+        console.log("Loaded profile fields:", mappedFields);
       } catch (error) {
         console.error("Failed to load profile fields:", error);
       }
@@ -108,6 +110,7 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
         id: field.id,
         key: field.label,
         value: field.value,
+        icon: field.icon,
       })));
     } catch (error) {
       console.error("Failed to add profile field:", error);

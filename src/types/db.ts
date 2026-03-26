@@ -62,6 +62,7 @@ export interface ProfileFields {
   profile_id: string;
   label: string;
   value: string;
+  icon?: string;
 }
 
 export interface Mask {

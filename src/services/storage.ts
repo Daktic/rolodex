@@ -243,10 +243,12 @@ async function getProfileFields(profileId: string): Promise<ProfileFields[]> {
                 profile_fields.id,
                 profile_fields.profile_id,
                 predicates.label AS label,
-                nodes.label AS value
+                nodes.label AS value,
+                icons.label AS icon
             FROM profile_fields
             JOIN predicates ON profile_fields.predicate_id = predicates.id
             JOIN nodes ON profile_fields.node_id = nodes.id
+            LEFT JOIN icons on predicates.icon_id = icons.id
             WHERE profile_id = ?
             `,
     [profileId]

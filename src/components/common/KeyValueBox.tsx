@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, TextInput, Pressable, Alert, Animated } from 'r
 import { Swipeable } from 'react-native-gesture-handler';
 import { Mask } from '@/types/db';
 import { setMaskFields, getMaskFields } from '@/services/storage';
+import {convertStringToIcon} from "@/utils/icons";
 
 interface KeyValueBoxProps {
   initialKey?: string;
@@ -18,7 +19,7 @@ interface KeyValueBoxProps {
   fieldId?: number;
   isMasked?: boolean;
   onMaskToggle?: (fieldId: number, isMasked: boolean) => void;
-  nubIcon?: React.ReactNode;
+  nubIcon?: string;
 }
 
 export default function KeyValueBox({
@@ -39,6 +40,7 @@ export default function KeyValueBox({
 }: KeyValueBoxProps) {
   const [key, setKey] = useState(initialKey);
   const [value, setValue] = useState(initialValue);
+  const [expanded, setExpanded] = useState(false);
   const swipeableRef = useRef<Swipeable>(null);
 
   // Update local state when props change
@@ -155,105 +157,97 @@ export default function KeyValueBox({
 
   return (
     <View style={styles.outerContainer}>
-      <View style={styles.nub}>
-        {nubIcon ?? null}
-      </View>
-    <View style={styles.swipeableContent}>
-    <Swipeable
-      ref={swipeableRef}
-      renderLeftActions={renderLeftActions}
-      renderRightActions={onDelete ? renderRightActions : undefined}
-      overshootLeft={false}
-      overshootRight={false}
-      onSwipeableOpen={(direction) => {
-        if (direction === 'left') {
-          handleSwipeRight();
-        }
-      }}
-    >
-      <Pressable
-        style={styles.container}
-        onPress={onLongPress}
+      <Swipeable
+        ref={swipeableRef}
+        renderLeftActions={renderLeftActions}
+        renderRightActions={onDelete ? renderRightActions : undefined}
+        overshootLeft={false}
+        overshootRight={false}
+        onSwipeableOpen={(direction) => {
+          if (direction === 'left') {
+            handleSwipeRight();
+          }
+        }}
       >
-        <View style={styles.keyContainer}>
-          {keyEditable && !isMasked ? (
-            <TextInput
-              style={styles.keyInput}
-              value={key}
-              onChangeText={handleKeyChange}
-              onBlur={handleBlur}
-              placeholder="Key"
-              placeholderTextColor="#999"
-            />
-          ) : (
-            <Text style={styles.keyText}>{key || 'Key'}</Text>
-          )}
-        </View>
+        <Pressable
+          style={styles.container}
+          onPress={() => setExpanded(e => !e)}
+          onLongPress={onLongPress}
+        >
 
-        <View style={[styles.valueContainer, isMasked && styles.blurredValue]}>
-          {isMasked ? (
-            <Text style={styles.maskedText}>Masked</Text>
-          ) : valueEditable ? (
-            <TextInput
-              style={styles.valueInput}
-              value={value}
-              onChangeText={handleValueChange}
-              onBlur={handleBlur}
-              placeholder="Value"
-              placeholderTextColor="#999"
-            />
-          ) : (
-            <Text style={styles.valueText}>
-              {value || 'Value'}
-            </Text>
-          )}
-        </View>
-      </Pressable>
-    </Swipeable>
-    </View>
+          <View style={styles.keyContainer}>
+            {nubIcon && (
+              <View style={styles.keyIconSection}>
+                {convertStringToIcon(nubIcon)}
+              </View>
+            )}
+            <View style={styles.keyTextSection}>
+              <Text style={styles.keyText} numberOfLines={expanded ? undefined : 1} ellipsizeMode="tail">
+                {key || 'Key'}
+              </Text>
+            </View>
+          </View>
+
+          <View style={[styles.valueContainer, isMasked && styles.blurredValue]}>
+            {isMasked ? (
+              <Text style={styles.maskedText}>Masked</Text>
+            ) : valueEditable ? (
+              <TextInput
+                style={styles.valueInput}
+                value={value}
+                onChangeText={handleValueChange}
+                onBlur={handleBlur}
+                placeholder="Value"
+                placeholderTextColor="#999"
+              />
+            ) : (
+              <Text style={styles.valueText} numberOfLines={expanded ? undefined : 1} ellipsizeMode="tail">
+                {value || 'Value'}
+              </Text>
+            )}
+          </View>
+
+        </Pressable>
+      </Swipeable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   outerContainer: {
-    flexDirection: 'row',
     marginBottom: 12,
-    alignItems: 'stretch',
     width: '100%',
   },
-  nub: {
-    width: 28,
-    backgroundColor: '#e8e8e8',
-    borderTopLeftRadius: 14,
-    borderBottomLeftRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  swipeableContent: {
-    flex: 1,
-  },
   container: {
-    flex: 1,
     flexDirection: 'row',
     borderWidth: 1,
     borderColor: '#e0e0e0',
-    borderTopRightRadius: 8,
-    borderBottomRightRadius: 8,
+    borderRadius: 8,
     overflow: 'hidden',
     backgroundColor: '#fff',
   },
   keyContainer: {
-    flex: 1,
+    width: '35%',
+    flexDirection: 'row',
     backgroundColor: '#f8f8f8',
-    padding: 12,
     borderRightWidth: 1,
     borderRightColor: '#e0e0e0',
   },
+  keyIconSection: {
+    width: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  keyTextSection: {
+    flex: 1,
+    padding: 12,
+    justifyContent: 'center',
+  },
   valueContainer: {
-    flex: 2,
+    flex: 1,
     backgroundColor: '#fff',
     padding: 12,
+    justifyContent: 'center',
   },
   keyInput: {
     fontSize: 14,
@@ -261,16 +255,16 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   keyText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#333',
+    color: '#555',
   },
   valueInput: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#333',
   },
   valueText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#333',
   },
   deleteContainer: {
