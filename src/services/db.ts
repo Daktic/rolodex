@@ -26,17 +26,31 @@ const creationStatements: Record<string, string> = {
     node_types: `
         CREATE TABLE IF NOT EXISTS object_types (
             id INTEGER PRIMARY KEY,
-            label TEXT NOT NULL UNIQUE, -- "Person", "Organization", "Event", "Place", "URL", "Username"
-            icon TEXT
+            label TEXT NOT NULL UNIQUE -- "Person", "Organization", "Event", "Place", "URL", "Username"
         )
+    `,
+    icons: `
+    CREATE TABLE IF NOT EXISTS icons (
+        id INTEGER PRIMARY KEY,
+        label TEXT NOT NULL UNIQUE
+    )
     `,
     predicates: `
         CREATE TABLE IF NOT EXISTS predicates (
-            id INTEGER PRIMARY KEY,
-            label TEXT NOT NULL UNIQUE, -- "works at", "knows", "attended", "linkedin"
-            object_type_id INTEGER,
-            FOREIGN KEY (object_type_id) REFERENCES object_types(id)
-        )
+          id INTEGER PRIMARY KEY,
+          label TEXT NOT NULL UNIQUE,
+          icon_id INTEGER,
+          FOREIGN KEY (icon_id) REFERENCES icons(id)
+        );
+    `,
+    predicateObjects: `
+        CREATE TABLE IF NOT EXISTS predicate_object_types (
+          predicate_id INTEGER NOT NULL,
+          object_type_id INTEGER NOT NULL,
+          PRIMARY KEY (predicate_id, object_type_id),  -- prevents duplicate pairs
+          FOREIGN KEY (predicate_id) REFERENCES predicates(id),
+          FOREIGN KEY (object_type_id) REFERENCES object_types(id)
+        );
     `,
     nodes: `
         CREATE TABLE IF NOT EXISTS nodes (
@@ -123,6 +137,49 @@ const creationStatements: Record<string, string> = {
   `
 };
 
+const insertionStatements: Record<string, string> = {
+    // These statements seed certain aspects of the database for usability.
+    seedData: `
+    BEGIN;
+
+        -- Icons
+        INSERT INTO icons (label) VALUES
+            ('Telegram'), ('LinkedIn'), ('X'),
+            ('Facebook'), ('Whatsapp'), ('GitHub'),
+            ('Substack'), ('Website')
+        ON CONFLICT(label) DO NOTHING;
+
+        -- Object Types
+        INSERT INTO object_types (label) VALUES
+            ('URL'), ('Social Media')
+        ON CONFLICT(label) DO NOTHING;
+
+        -- Predicates — label matches icon name, so we can select directly from icons
+        INSERT INTO predicates (label, icon_id)
+        SELECT icons.label, icons.id FROM icons
+        WHERE icons.label IN ('Telegram', 'LinkedIn', 'X', 'Facebook', 'Whatsapp', 'GitHub', 'Substack', 'Website')
+        ON CONFLICT(label) DO NOTHING;
+
+        -- All predicates are URLs
+        INSERT INTO predicate_object_types (predicate_id, object_type_id)
+        SELECT predicates.id, object_types.id
+        FROM predicates
+        JOIN object_types ON object_types.label = 'URL'
+        WHERE predicates.label IN ('Telegram', 'LinkedIn', 'X', 'Facebook', 'Whatsapp', 'GitHub', 'Substack', 'Website')
+        ON CONFLICT DO NOTHING;
+
+        -- Social platforms also get Social Media tag
+        INSERT INTO predicate_object_types (predicate_id, object_type_id)
+        SELECT predicates.id, object_types.id
+        FROM predicates
+        JOIN object_types ON object_types.label = 'Social Media'
+        WHERE predicates.label IN ('Telegram', 'LinkedIn', 'X', 'Facebook', 'Whatsapp')
+        ON CONFLICT DO NOTHING;
+
+    COMMIT;
+    `,
+};
+
 
 export async function initDatabase() {
     if (dbInstance) return dbInstance;
@@ -142,6 +199,15 @@ export async function initDatabase() {
 
     // Run migrations
     await runMigrations(db);
+
+    // Run insertion statements
+    for (const statement of Object.values(insertionStatements)) {
+        try {
+            await db.execAsync(statement);
+        } catch (e) {
+            console.error("Error inserting data:", e);
+        }
+    }
 
     dbInstance = db;
     return db;

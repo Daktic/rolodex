@@ -5,7 +5,7 @@ import {
     Connection,
     ConnectionField,
     ProfileFields,
-    AnnotationField, Predicate, ObjectType, SemanticNode, Predicates
+    AnnotationField, Predicate, ObjectType, SemanticNode, Predicates, Icon
 } from "@/types/db";
 import {getDatabase} from "@/services/db";
 
@@ -82,11 +82,32 @@ async function deleteProfile(id: string): Promise<void> {
 // ============================================================================
 // Semantic Operations
 // ============================================================================
-async function upsertPredicate(label: string) {
-  const db = getDatabase();
+async function upsertPredicate(label: string, icon?: string) {
+    const db = getDatabase();
+    let iconId = null;
+    if (icon) {iconId = await getIconId(icon);}
 
   const row = await db.getFirstAsync<{ id: number }>(
-    `INSERT INTO predicates (label)
+    `INSERT INTO predicates (label, icon_id)
+     VALUES (?, ?)
+     ON CONFLICT(label) DO UPDATE SET label = excluded.label
+     returning id`,
+    [label, iconId]
+  );
+
+  return row!.id;
+}
+
+async function getAllPredicates(): Promise<Predicate[]> {
+    const db = getDatabase();
+    return await db.getAllAsync<Predicate>(`
+        SELECT * FROM predicates LEFT JOIN icons ON predicates.icon_id = icons.id`);
+}
+
+async function upsertObjectType(label: string) {
+  const db = getDatabase();
+  const row = await db.getFirstAsync<{ id: number }>(
+    `INSERT INTO object_types (label)
      VALUES (?)
      ON CONFLICT(label) DO UPDATE SET label = excluded.label
      returning id`,
@@ -96,39 +117,60 @@ async function upsertPredicate(label: string) {
   return row!.id;
 }
 
-async function getAllPredicates(): Promise<Predicate[]> {
+async function upsertIcon(label: string): Promise<number> {
     const db = getDatabase();
-    return await db.getAllAsync<Predicate>("SELECT * FROM predicates");
+    const row = await db.getFirstAsync<{ id: number }>(
+        `INSERT INTO icons (label) VALUES (?)
+         ON CONFLICT(label) DO UPDATE SET label = excluded.label
+         returning id`,
+        [label]
+    );
+    return row!.id;
 }
 
-async function upsertObjectType(label: string, icon?: string) {
-  const db = getDatabase();
-  const row = await db.getFirstAsync<{ id: number }>(
-    `INSERT INTO node_types (label, icon)
-     VALUES (?, ?)
-     ON CONFLICT(label) DO UPDATE SET label = excluded.label
-     returning id`,
-    [label, icon?? null]
-  );
+async function getAllIcons(): Promise<Icon[]> {
+    const db = getDatabase();
+    return await db.getAllAsync<Icon>('SELECT * FROM icons');
+}
 
-  return row!.id;
+async function getIconId(label: string): Promise<number | null> {
+    const db = getDatabase();
+    const row = await db.getFirstAsync<{ id: number }>(
+        `SELECT id FROM icons WHERE label = ?`,
+        [label]
+    );
+    return row?.id ?? null;
 }
 
 async function getAllObjectTypes(): Promise<ObjectType[]> {
     const db = getDatabase();
-    return await db.getAllAsync<ObjectType>("SELECT * FROM node_types");
+    return await db.getAllAsync<ObjectType>("SELECT * FROM object_types");
+}
+
+async function upsertPredicateObjectType(predicateId: number, objectTypeId: number): Promise<void> {
+    const db = getDatabase();
+    await db.runAsync(
+        `INSERT INTO predicate_object_types (predicate_id, object_type_id)
+         VALUES (?, ?)
+         ON CONFLICT(predicate_id, object_type_id) DO NOTHING`,
+        [predicateId, objectTypeId]
+    );
 }
 
 async function getAllPredicateObjects(): Promise<Predicates[]> {
     const db = getDatabase();
     return await db.getAllAsync<Predicates>(
         `SELECT
+            predicates.id,
             predicates.label,
-            object_types.label as objectLabel,
-            object_types.icon
+            GROUP_CONCAT(object_types.label) as objectLabel,
+            icons.label as iconName
         FROM predicates
-        LEFT JOIN object_types ON predicates.object_type_id = object_types.id`
-    )
+        LEFT JOIN predicate_object_types pot ON predicates.id = pot.predicate_id
+        LEFT JOIN object_types ON pot.object_type_id = object_types.id
+        LEFT JOIN icons ON predicates.icon_id = icons.id
+        GROUP BY predicates.id`
+    );
 }
 
 async function upsertObject(label: string, value?: string) {
@@ -468,19 +510,20 @@ async function upsertAnnotation(
 async function getAnnotations(connectionId: number): Promise<AnnotationField[]> {
   const db = getDatabase();
   return await db.getAllAsync<AnnotationField>(
-    `SELECT 
+    `SELECT
                 annotations.id,
-                object_types.label AS type,
+                GROUP_CONCAT(object_types.label) AS type,
                 predicates.label AS label,
                 nodes.label AS value,
                 annotations.created_at
-            FROM annotations  
+            FROM annotations
             JOIN predicates ON annotations.predicate_id = predicates.id
             JOIN nodes ON annotations.node_id = nodes.id
-            LEFT JOIN object_types ON predicates.object_type_id = object_types.id
-            WHERE connection_id = ? 
-            ORDER BY annotations.created_at DESC
-            `,
+            LEFT JOIN predicate_object_types pot ON predicates.id = pot.predicate_id
+            LEFT JOIN object_types ON pot.object_type_id = object_types.id
+            WHERE connection_id = ?
+            GROUP BY annotations.id
+            ORDER BY annotations.created_at DESC`,
     [connectionId]
   );
 }
@@ -531,4 +574,7 @@ export {
     getAllPredicateObjects,
     upsertPredicate,
     upsertObjectType,
+    upsertPredicateObjectType,
+    upsertIcon,
+    getAllIcons,
 };

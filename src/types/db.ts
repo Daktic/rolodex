@@ -10,13 +10,22 @@ export interface Profile {
 export interface Predicate {
   id: number;
   label: string; // e.g. "works at", "knows", "attended", "linkedin"
-  object_type_id: number | null; // references object_types.id
+  icon_id: number | null; // references icons.id
 }
 
 export interface ObjectType {
   id: number;
-  label: string; // e.g. "Person", "Organization", "Event", "Place", "URL", "Username"
-  icon: string | null;
+  label: string; // e.g. "Link", "Social Media", "Email"
+}
+
+export interface Icon {
+  id: number;
+  label: string; // e.g. "BriefcaseBusiness", "Handshake", "Telegram"
+}
+
+export interface PredicateObjectType {
+  predicate_id: number;
+  object_type_id: number;
 }
 
 export interface SemanticNode {
@@ -34,9 +43,10 @@ export interface Triple {
 }
 
 export interface Predicates {
+  id: number;
   label: string;
-  objectLabel: string;
-  icon?: string;
+  objectLabel: string | null; // GROUP_CONCAT of associated object_type labels
+  iconName: string | null;    // icon label from icons table
 }
 
 export interface ProfileField {
@@ -85,7 +95,6 @@ export interface ConnectionField {
 export interface Annotation {
   id: number;
   connection_id: number;
-  object_type_id: number;
   predicate_id: number;
   node_id: number;
   created_at: number;

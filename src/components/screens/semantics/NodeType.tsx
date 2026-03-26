@@ -5,6 +5,7 @@ import {getAllObjectTypes, getAllPredicateObjects} from "@/services/storage";
 import KVBContainer from "@/components/common/KVBContainer";
 import AddObjectType from "@/components/screens/semantics/AddObjectType";
 import AddPredicate from "@/components/screens/semantics/AddPredicate";
+import {convertStringToIcon} from "@/utils/icons";
 
 const NodeType = () => {
     const [objectTypes, setObjectTypes] = useState<ObjectType[]>([]);
@@ -57,6 +58,7 @@ const NodeType = () => {
                 onBlur={() => {}}
                 showAddButton={false}
             />
+
         </View>
     );
 };
