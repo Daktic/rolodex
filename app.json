@@ -13,7 +13,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.rolodex"
+      "bundleIdentifier": "com.dakticdigital.rolodex"
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +23,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.rolodex"
+      "package": "com.dakticdigital.rolodex"
     },
     "web": {
       "favicon": "./assets/favicon.png"
