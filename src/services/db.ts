@@ -48,8 +48,8 @@ const creationStatements: Record<string, string> = {
           predicate_id INTEGER NOT NULL,
           object_type_id INTEGER NOT NULL,
           PRIMARY KEY (predicate_id, object_type_id),  -- prevents duplicate pairs
-          FOREIGN KEY (predicate_id) REFERENCES predicates(id),
-          FOREIGN KEY (object_type_id) REFERENCES object_types(id)
+          FOREIGN KEY (predicate_id) REFERENCES predicates(id) ON DELETE CASCADE,
+          FOREIGN KEY (object_type_id) REFERENCES object_types(id) ON DELETE CASCADE
         );
     `,
     nodes: `

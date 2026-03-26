@@ -119,13 +119,11 @@ async function upsertObjectType(label: string) {
 
 async function deleteObjectType(id: number): Promise<void> {
   const db = getDatabase();
-  await db.runAsync(`DELETE FROM predicate_object_types WHERE object_type_id = ?`, [id]);
   await db.runAsync(`DELETE FROM object_types WHERE id = ?`, [id]);
 }
 
 async function deletePredicate(id: number): Promise<void> {
   const db = getDatabase();
-  await db.runAsync(`DELETE FROM predicate_object_types WHERE predicate_id = ?`, [id]);
   await db.runAsync(`DELETE FROM predicates WHERE id = ?`, [id]);
 }
 
