@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, TextInput, Pressable, Alert, Animated } from 'react-native';
+import { StyleSheet, Text, View, TextInput, Pressable, Alert } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { Mask } from '@/types/db';
 import { setMaskFields, getMaskFields } from '@/services/storage';
@@ -70,14 +70,18 @@ export default function KeyValueBox({
 
   const handleDelete = () => {
     if (isMasked) {
-      // Don't allow deletion of blurred fields
+      swipeableRef.current?.close();
       return;
     }
     Alert.alert(
       'Delete Field',
       `Are you sure you want to delete "${key || 'this field'}"?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+          onPress: () => swipeableRef.current?.close(),
+        },
         {
           text: 'Delete',
           style: 'destructive',
@@ -128,30 +132,11 @@ export default function KeyValueBox({
     return <View style={{ width: 80 }} />;
   };
 
-  const renderRightActions = (
-    progress: Animated.AnimatedInterpolation<number>,
-    dragX: Animated.AnimatedInterpolation<number>
-  ) => {
-    const trans = dragX.interpolate({
-      inputRange: [-80, 0],
-      outputRange: [0, 80],
-      extrapolate: 'clamp',
-    });
-
+  const renderRightActions = () => {
     return (
-      <Animated.View
-        style={[
-          styles.deleteContainer,
-          { transform: [{ translateX: trans }] },
-        ]}
-      >
-        <Pressable
-          style={[styles.deleteButton, isMasked && styles.deleteButtonDisabled]}
-          onPress={handleDelete}
-        >
-          <Text style={styles.deleteText}>Delete</Text>
-        </Pressable>
-      </Animated.View>
+      <View style={[styles.deleteButton, isMasked && styles.deleteButtonDisabled]}>
+        <Text style={styles.deleteText}>Delete</Text>
+      </View>
     );
   };
 
@@ -166,6 +151,9 @@ export default function KeyValueBox({
         onSwipeableOpen={(direction) => {
           if (direction === 'left') {
             handleSwipeRight();
+          }
+          if (direction === 'right') {
+            handleDelete();
           }
         }}
       >
@@ -267,17 +255,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#333',
   },
-  deleteContainer: {
-    justifyContent: 'center',
-    alignItems: 'flex-end',
-    marginBottom: 12,
-  },
   deleteButton: {
     backgroundColor: '#ff3b30',
     justifyContent: 'center',
     alignItems: 'center',
     width: 80,
-    height: '100%',
+    marginLeft: -8,
+    paddingLeft: 8,
     borderTopRightRadius: 8,
     borderBottomRightRadius: 8,
   },
