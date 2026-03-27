@@ -1,4 +1,3 @@
-import { Camera, QrCode } from 'lucide-react-native';
 import { Modal, View, StyleSheet, TouchableOpacity } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { generateConnectionProtocol } from '@/services/connection/exchange';
@@ -16,8 +15,14 @@ interface QRScannerProps {
     setShowCamera: (show: boolean) => void;
 }
 const QRScanner = ({onClose, setShowCamera}: QRScannerProps) => {
-    // Needed to gate the continuous QR calls.
     const isQRProcessing = useRef(false);
+    const [permission, requestPermission] = useCameraPermissions();
+
+    useEffect(() => {
+        if (!permission?.granted) {
+            requestPermission();
+        }
+    }, []);
 
     const navigation = useNavigation<NativeStackNavigationProp<ConnectionsStackParamList>>();
 
@@ -58,38 +63,28 @@ interface QRDialogProps {
     maskId: string;
     issuer: string;
     signMessage: (message: string) => Promise<string>;
+    initialMode?: 'qr' | 'camera';
 }
 
-export default function QRDialog({ visible, onClose, maskId, issuer, signMessage }: QRDialogProps) {
+export default function QRDialog({ visible, onClose, maskId, issuer, signMessage, initialMode = 'qr' }: QRDialogProps) {
     const [qrData, setQrData] = useState<string>('');
-    const [showCamera, setShowCamera] = useState(false);
-    const [permission, requestPermission] = useCameraPermissions();
+    const [mode, setMode] = useState<'qr' | 'camera'>(initialMode);
 
     useEffect(() => {
-        if (visible && maskId && !showCamera) {
+        if (visible && maskId) {
             generateConnectionProtocol(maskId, issuer, signMessage)
                 .then((protocol: ExchangeV1) => {
                     setQrData(JSON.stringify(protocol));
                 })
                 .catch(error => console.error("Failed to generate QR protocol:", error));
         }
-    }, [visible, maskId, issuer, showCamera]);
+    }, [visible, maskId, issuer]);
 
     useEffect(() => {
-        if (!visible) {
-            setShowCamera(false);
+        if (visible) {
+            setMode(initialMode);
         }
-    }, [visible]);
-
-    const handleCameraPress = async () => {
-        if (!permission?.granted) {
-            const result = await requestPermission();
-            if (!result.granted) {
-                return;
-            }
-        }
-        setShowCamera(true);
-    };
+    }, [visible, initialMode]);
 
     return (
         <Modal
@@ -104,19 +99,9 @@ export default function QRDialog({ visible, onClose, maskId, issuer, signMessage
                 onPress={onClose}
             >
                 <View style={styles.dialog} onStartShouldSetResponder={() => true}>
-                    <TouchableOpacity
-                        style={styles.cameraIconContainer}
-                        onPress={showCamera ? () => setShowCamera(false) : handleCameraPress}
-                    >
-                        {showCamera ? (
-                            <QrCode size={24} color="#666" />
-                        ) : (
-                            <Camera size={24} color="#666" />
-                        )}
-                    </TouchableOpacity>
                     <View style={styles.qrContainer}>
-                        {showCamera ? (
-                            <QRScanner setShowCamera={setShowCamera} onClose={onClose}/>
+                        {mode === 'camera' ? (
+                            <QRScanner setShowCamera={(show) => setMode(show ? 'camera' : 'qr')} onClose={onClose}/>
                         ) : (
                             qrData && (
                                 <QRCode
@@ -146,16 +131,9 @@ const styles = StyleSheet.create({
         width: 300,
         position: 'relative',
     },
-    cameraIconContainer: {
-        position: 'absolute',
-        top: 16,
-        left: 16,
-        zIndex: 1,
-    },
     qrContainer: {
         alignItems: 'center',
         justifyContent: 'center',
-        paddingTop: 20,
         width: 250,
         height: 250,
     },

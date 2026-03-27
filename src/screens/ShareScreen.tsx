@@ -2,11 +2,8 @@ import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-nati
 import { useEffect, useState } from 'react';
 import { generatePayload } from '@/services/connection/exchange';
 import { PayloadV1 } from '@/types/exchange';
-import ConnectionStatus from '@/components/screens/share/ConnectionStatus';
-import NFCListener, { ConnectionState } from '@/components/screens/share/NFCListener';
-import { ConnectionSession } from '@/services/connection/handshake';
 import { useRoute } from '@react-navigation/native';
-import { QrCode } from "lucide-react-native";
+import { QrCode, Camera } from "lucide-react-native";
 import QRDialog from '@/dialogs/QR';
 import {getProfileId, signMessage} from "@/services/wallet";
 
@@ -15,13 +12,8 @@ export default function ShareScreen() {
     const { maskId } = route.params as { maskId: string };
     const [payload, setPayload] = useState<PayloadV1 | null>(null);
     const [qrDialogVisible, setQrDialogVisible] = useState(false);
-    const [connectionStatus, setConnectionStatus] = useState<ConnectionState>('idle');
+    const [qrInitialMode, setQrInitialMode] = useState<'qr' | 'camera'>('qr');
     const [issuer, setIssuer] = useState<string | null>(null);
-
-    const handleSessionReceived = (session: ConnectionSession) => {
-        console.log('Received session from remote device:', session);
-        // TODO: Complete handshake and exchange contact data
-    };
 
     useEffect(() => {
         getProfileId().then((id) => {
@@ -39,17 +31,23 @@ export default function ShareScreen() {
 
     return (
         <View style={styles.container}>
-            <NFCListener
-                onStatusChange={setConnectionStatus}
-                onSessionReceived={handleSessionReceived}
-            />
+            <Text style={styles.title}>Share Contact</Text>
 
-            <View style={styles.connectMethodsContainer}>
+            <View style={styles.splitButton}>
                 <TouchableOpacity
-                    style={styles.methodItem}
-                    onPress={() => setQrDialogVisible(true)}
+                    style={[styles.splitButtonHalf, styles.splitButtonLeft]}
+                    onPress={() => { setQrInitialMode('qr'); setQrDialogVisible(true); }}
                 >
-                    <QrCode />
+                    <QrCode size={18} color="#fff" />
+                    <Text style={styles.splitButtonText}>Show QR</Text>
+                </TouchableOpacity>
+                <View style={styles.splitButtonDivider} />
+                <TouchableOpacity
+                    style={[styles.splitButtonHalf, styles.splitButtonRight]}
+                    onPress={() => { setQrInitialMode('camera'); setQrDialogVisible(true); }}
+                >
+                    <Camera size={18} color="#fff" />
+                    <Text style={styles.splitButtonText}>Scan</Text>
                 </TouchableOpacity>
             </View>
 
@@ -59,14 +57,12 @@ export default function ShareScreen() {
                 maskId={maskId}
                 issuer={issuer?? "Invalid"}
                 signMessage={signMessage}
+                initialMode={qrInitialMode}
             />
-            <Text style={styles.title}>Share Contact</Text>
-
-            <ConnectionStatus status={connectionStatus} />
 
             <Text style={styles.description}>
-                Tap phones to share contact info.{'\n'}
-                Ensure both parties have this screen open.
+                Share your QR, share your contact{'\n'}
+                Scan to receive some else's.
             </Text>
 
             <View style={styles.dataPreviewContainer}>
@@ -102,32 +98,51 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
         paddingTop: 40,
     },
-    connectMethodsContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 24,
-    },
-    methodItem: {
-        alignItems: 'center',
-        gap: 8,
-    },
-    methodLabel: {
-        fontSize: 14,
-        color: '#666',
-    },
     title: {
         fontSize: 32,
         fontWeight: 'bold',
         textAlign: 'center',
         marginBottom: 24,
     },
+    splitButton: {
+        flexDirection: 'row',
+        backgroundColor: '#1a1a1a',
+        borderRadius: 12,
+        marginBottom: 20,
+        overflow: 'hidden',
+    },
+    splitButtonHalf: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        paddingVertical: 14,
+    },
+    splitButtonLeft: {
+        borderTopLeftRadius: 12,
+        borderBottomLeftRadius: 12,
+    },
+    splitButtonRight: {
+        borderTopRightRadius: 12,
+        borderBottomRightRadius: 12,
+    },
+    splitButtonDivider: {
+        width: 1,
+        backgroundColor: '#444',
+        marginVertical: 10,
+    },
+    splitButtonText: {
+        color: '#fff',
+        fontSize: 15,
+        fontWeight: '600',
+    },
     description: {
         fontSize: 14,
         color: '#666',
         textAlign: 'center',
         lineHeight: 20,
-        marginBottom: 24,
+        marginBottom: 20,
     },
     dataPreviewContainer: {
         backgroundColor: '#1a1a1a',
