@@ -212,6 +212,8 @@ export default function KeyValueBox({
                 onBlur={handleBlur}
                 placeholder="Value"
                 placeholderTextColor="#999"
+                autoCapitalize={'none'}
+                autoCorrect={false}
               />
             ) : (
               <Text style={styles.valueText} numberOfLines={expanded ? undefined : 1} ellipsizeMode="tail">
