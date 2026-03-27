@@ -1,6 +1,6 @@
 {
-  "name": "rolodex",
-  "version": "0.1.0",
+  "name": "dexio",
+  "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",

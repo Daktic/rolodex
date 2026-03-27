@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "rolodex",
-    "slug": "rolodex",
+    "name": "Dexio",
+    "slug": "Dexio",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/Dexio_logo_1.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash-icon.png",
