@@ -96,7 +96,6 @@ const parseExternalQRCode = (data: string) => {
     await upsertAnnotation(
         connectionID,
         "Social",
-        connectionType,
         url
     )
     return connectionID;
