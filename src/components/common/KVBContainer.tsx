@@ -2,6 +2,12 @@ import { useState } from 'react';
 import { StyleSheet, View, TouchableOpacity, Text } from 'react-native';
 import KeyValueBox from './KeyValueBox';
 import { Mask } from '@/types/db';
+import ContextMenu from './ContextMenu';
+import {
+  ContextMenuActionDescriptor,
+  ContextMenuSelection,
+  KVBContextMenuActionId,
+} from '@/services/contextMenu';
 
 export interface KeyValuePair {
   id: number;
@@ -21,6 +27,12 @@ interface KVBContainerProps {
   currentMask?: Mask | null;
   maskedFieldIds?: Set<number>;
   onMaskToggle?: (fieldId: number, isMasked: boolean) => void;
+  enableShortPressEdit?: boolean;
+  getContextActions?: (item: KeyValuePair) => ContextMenuActionDescriptor[];
+  onContextAction?: (event: {
+    item: KeyValuePair;
+    selection: ContextMenuSelection;
+  }) => void;
 }
 
 export default function KVBContainer({
@@ -34,12 +46,43 @@ export default function KVBContainer({
   currentMask,
   maskedFieldIds = new Set(),
   onMaskToggle,
+  enableShortPressEdit = true,
+  getContextActions,
+  onContextAction,
 }: KVBContainerProps) {
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [menuItem, setMenuItem] = useState<KeyValuePair | null>(null);
+  const [menuActions, setMenuActions] = useState<ContextMenuActionDescriptor[]>([]);
 
-  const handleLongPress = (id: number) => {
-    // Toggle edit mode for this row
-    setEditingId(editingId === id ? null : id);
+  const handleLongPress = (item: KeyValuePair) => {
+    const actions = getContextActions?.(item) ?? [];
+    if (actions.length === 0) return;
+    setMenuItem(item);
+    setMenuActions(actions);
+    setMenuVisible(true);
+  };
+
+  const handlePress = (item: KeyValuePair) => {
+    if (onItemPress) {
+      onItemPress(item.id);
+      return;
+    }
+    if (!enableShortPressEdit) return;
+    setEditingId((prev) => (prev === item.id ? null : item.id));
+  };
+
+  const handleContextSelect = (selection: ContextMenuSelection) => {
+    if (!menuItem) return;
+    if (selection.actionId === KVBContextMenuActionId.Edit) {
+      setEditingId(menuItem.id);
+    }
+    onContextAction?.({
+      item: menuItem,
+      selection,
+    });
+    setMenuVisible(false);
+    setMenuItem(null);
   };
 
   const handleKeyChange = (id: number, newKey: string) => {
@@ -79,8 +122,8 @@ export default function KVBContainer({
             onKeyChange={(newKey) => handleKeyChange(item.id, newKey)}
             onValueChange={(newValue) => handleValueChange(item.id, newValue)}
             onBlur={(key, value) => onBlur(item.id, key, value)}
-            onPress={onItemPress ? () => onItemPress(item.id) : undefined}
-            onLongPress={() => handleLongPress(item.id)}
+            onPress={() => handlePress(item)}
+            onLongPress={() => handleLongPress(item)}
             onDelete={onDelete ? () => handleDelete(item.id) : undefined}
             currentMask={currentMask}
             fieldId={item.id}
@@ -96,6 +139,16 @@ export default function KVBContainer({
           <Text style={styles.addButtonText}>+ Add Field</Text>
         </TouchableOpacity>
       )}
+
+      <ContextMenu
+        visible={menuVisible}
+        actions={menuActions}
+        onClose={() => {
+          setMenuVisible(false);
+          setMenuItem(null);
+        }}
+        onSelect={handleContextSelect}
+      />
     </View>
   );
 }

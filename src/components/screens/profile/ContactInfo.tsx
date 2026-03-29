@@ -1,11 +1,25 @@
 import { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import {
+  Linking,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+import QRCode from 'react-native-qrcode-svg';
 import KVBContainer, { KeyValuePair } from '../../common/KVBContainer';
 import { getProfileFields, upsertProfileField, updateProfileField, deleteProfileField, getMaskFields } from '@/services/storage';
 import {Mask, ObjectType, Predicate, SemanticNode} from '@/types/db';
 import { getProfileId } from '@/services/wallet';
 import AddTriple from "@/dialogs/AddTriple";
 import { useFocusEffect } from '@react-navigation/native';
+import {
+  ContextMenuActionDescriptor,
+  ContextMenuSelection,
+  KVBContextMenuActionId,
+} from '@/services/contextMenu';
 
 interface ContactInfoProps {
   currentMask: Mask | null;
@@ -19,6 +33,7 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
   const [newLabel, setNewLabel] = useState<Predicate | null>(null);
   const [newValue, setNewValue] = useState<SemanticNode | null>(null);
   const [newType, setNewType] = useState<ObjectType | null>(null);
+  const [qrValue, setQrValue] = useState<string | null>(null);
 
 
   // Load profile ID on mount
@@ -136,6 +151,62 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
     });
   };
 
+  const getContextActions = (
+    item: KeyValuePair
+  ): ContextMenuActionDescriptor<KVBContextMenuActionId>[] => {
+    const actions: ContextMenuActionDescriptor<KVBContextMenuActionId>[] = [
+      {
+        id: KVBContextMenuActionId.Copy,
+        label: 'Copy',
+        iconName: 'Copy',
+        payload: item.value,
+      },
+      {
+        id: KVBContextMenuActionId.ShowQr,
+        label: 'Show QR',
+        iconName: 'QrCode',
+        payload: item.value,
+      },
+    ];
+
+    if (/^https?:\/\//i.test(item.value)) {
+      actions.unshift({
+        id: KVBContextMenuActionId.OpenUrl,
+        label: 'Open URL',
+        iconName: 'ExternalLink',
+        payload: item.value,
+      });
+    }
+
+    return actions;
+  };
+
+  const handleContextAction = async ({
+    item,
+    selection,
+  }: {
+    item: KeyValuePair;
+    selection: ContextMenuSelection;
+  }) => {
+    const payloadValue = String(selection.payload ?? item.value ?? '');
+
+    switch (selection.actionId) {
+      case KVBContextMenuActionId.Copy:
+        await Clipboard.setStringAsync(payloadValue);
+        break;
+      case KVBContextMenuActionId.OpenUrl:
+        if (payloadValue) {
+          await Linking.openURL(payloadValue);
+        }
+        break;
+      case KVBContextMenuActionId.ShowQr:
+        setQrValue(payloadValue);
+        break;
+      default:
+        break;
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.sectionTitle}>Contact Fields</Text>
@@ -148,6 +219,8 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
         maskedFieldIds={maskedFieldIds}
         onMaskToggle={handleMaskToggle}
         onAdd={() => setShowAddDialog(true)}
+        getContextActions={getContextActions}
+        onContextAction={handleContextAction}
       />
       <AddTriple
           visible={showAddDialog}
@@ -160,6 +233,25 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
           newType={newType}
           setNewType={setNewType}
       />
+      <Modal
+        visible={Boolean(qrValue)}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setQrValue(null)}
+      >
+        <TouchableOpacity
+          style={styles.qrOverlay}
+          onPress={() => setQrValue(null)}
+          activeOpacity={1}
+        >
+          <View
+            style={styles.qrContainer}
+            onStartShouldSetResponder={() => true}
+          >
+            {qrValue ? <QRCode value={qrValue} size={220} /> : null}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -173,5 +265,16 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     marginBottom: 16,
+  },
+  qrOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  qrContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
   },
 });

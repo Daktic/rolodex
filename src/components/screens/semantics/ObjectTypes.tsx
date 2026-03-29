@@ -78,6 +78,7 @@ const ObjectTypesTab = () => {
                 onBlur={() => {}}
                 onAdd={() => setDialogVisible(true)}
                 onDelete={handleDelete}
+                enableShortPressEdit={false}
             />
         </>
     );

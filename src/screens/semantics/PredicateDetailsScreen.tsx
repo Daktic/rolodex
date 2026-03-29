@@ -203,6 +203,7 @@ const PredicateDetailsScreen = ({route}: Props) => {
                     onBlur={() => {}}
                     onDelete={handleDeleteObjectType}
                     onAdd={openAddModal}
+                    enableShortPressEdit={false}
                 />
             </View>
 
