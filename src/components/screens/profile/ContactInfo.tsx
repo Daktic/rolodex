@@ -10,15 +10,22 @@ import {
 import * as Clipboard from 'expo-clipboard';
 import QRCode from 'react-native-qrcode-svg';
 import KVBContainer, { KeyValuePair } from '../../common/KVBContainer';
-import { getProfileFields, upsertProfileField, updateProfileField, deleteProfileField, getMaskFields } from '@/services/storage';
-import {Mask, ObjectType, Predicate, SemanticNode} from '@/types/db';
+import {
+  getAllPredicateObjects,
+  getProfileFields,
+  upsertProfileField,
+  updateProfileField,
+  deleteProfileField,
+  getMaskFields,
+} from '@/services/storage';
+import {Mask, ObjectType, Predicate, Predicates, SemanticNode} from '@/types/db';
 import { getProfileId } from '@/services/wallet';
 import AddTriple from "@/dialogs/AddTriple";
 import { useFocusEffect } from '@react-navigation/native';
 import {
-  ContextMenuActionDescriptor,
   ContextMenuSelection,
   KVBContextMenuActionId,
+  resolveProfileFieldContextActions,
 } from '@/services/contextMenu';
 
 interface ContactInfoProps {
@@ -34,6 +41,7 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
   const [newValue, setNewValue] = useState<SemanticNode | null>(null);
   const [newType, setNewType] = useState<ObjectType | null>(null);
   const [qrValue, setQrValue] = useState<string | null>(null);
+  const [predicateObjects, setPredicateObjects] = useState<Predicates[]>([]);
 
 
   // Load profile ID on mount
@@ -68,6 +76,23 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
   useFocusEffect(useCallback(() => {
     loadFields();
   }, [loadFields]));
+
+  const loadPredicateObjects = useCallback(async () => {
+    try {
+      const predicates = await getAllPredicateObjects();
+      setPredicateObjects(predicates);
+    } catch (error) {
+      console.error("Failed to load predicate object types:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPredicateObjects();
+  }, [loadPredicateObjects]);
+
+  useFocusEffect(useCallback(() => {
+    loadPredicateObjects();
+  }, [loadPredicateObjects]));
 
   // Load masked fields when mask changes
   useEffect(() => {
@@ -151,35 +176,12 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
     });
   };
 
-  const getContextActions = (
-    item: KeyValuePair
-  ): ContextMenuActionDescriptor<KVBContextMenuActionId>[] => {
-    const actions: ContextMenuActionDescriptor<KVBContextMenuActionId>[] = [
-      {
-        id: KVBContextMenuActionId.Copy,
-        label: 'Copy',
-        iconName: 'Copy',
-        payload: item.value,
-      },
-      {
-        id: KVBContextMenuActionId.ShowQr,
-        label: 'Show QR',
-        iconName: 'QrCode',
-        payload: item.value,
-      },
-    ];
-
-    if (/^https?:\/\//i.test(item.value)) {
-      actions.unshift({
-        id: KVBContextMenuActionId.OpenUrl,
-        label: 'Open URL',
-        iconName: 'ExternalLink',
-        payload: item.value,
-      });
-    }
-
-    return actions;
-  };
+  const getContextActions = (item: KeyValuePair) =>
+    resolveProfileFieldContextActions({
+      key: item.key,
+      value: item.value,
+      predicateObjects,
+    });
 
   const handleContextAction = async ({
     item,
