@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the high-level architecture of the Rolodex mobile application.
+This document describes the high-level architecture of the Dexio mobile application.
 
 ---
 

@@ -1,20 +1,20 @@
-# Rolodex
+# Dexio
 
 **A private, verifiable way to exchange contact information in person.**
 
 ---
 
-## What is Rolodex?
+## What is Dexio?
 
-Rolodex is a private contact exchange protocol. Meet someone, tap phones, and both keep a cryptographically verified record of what was shared. No typing. No business cards. No uploading your contacts to someone else's server.
+Dexio is a private contact exchange protocol. Meet someone, tap phones, and both keep a cryptographically verified record of what was shared. No typing. No business cards. No uploading your contacts to someone else's server.
 
-Instead of trusting a platform to manage your professional network, Rolodex stores everything locally on your device. After connecting, it becomes a personal CRM—you can add notes, relationships, and context about the people you meet. Your network stays private unless you explicitly choose to prove a connection.
+Instead of trusting a platform to manage your professional network, Dexio stores everything locally on your device. After connecting, it becomes a personal CRM—you can add notes, relationships, and context about the people you meet. Your network stays private unless you explicitly choose to prove a connection.
 
 ### Why this exists
 
 Ever been to a conference, swapped Telegrams, and taken a photo together with a caption like "Ben from the corpo mixer"? How helpful is that the next day? What about a week later? A month?
 
-Rolodex solves this. Create custom profiles to share different subsets of your identity with a tap. Met someone at a hackathon? Share your GitHub and Telegram. Networking at a industry event? Share your LinkedIn and email. Later, annotate those contacts—"Works at Acme Corp", "Met at ETH Denver", "Introduced by Sarah"—and build a CRM layer for your personal contact book.
+Dexio solves this. Create custom profiles to share different subsets of your identity with a tap. Met someone at a hackathon? Share your GitHub and Telegram. Networking at a industry event? Share your LinkedIn and email. Later, annotate those contacts—"Works at Acme Corp", "Met at ETH Denver", "Introduced by Sarah"—and build a CRM layer for your personal contact book.
 
 All connections and data stay private on your device. You can choose to prove a connection later if needed, but by default, your network is yours alone.
 
@@ -135,7 +135,7 @@ Building the foundational mobile app and connection exchange flow.
 
 ## Contributing
 
-Rolodex is open source. We're building in public to provide transparency and demonstrate our technical approach.
+Dexio is open source. We're building in public to provide transparency and demonstrate our technical approach.
 
 We welcome community input. Feel free to:
 - Open issues for bugs or feature suggestions
