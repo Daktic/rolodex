@@ -1,6 +1,6 @@
-# Contributing to Rolodex
+# Contributing to Dexio
 
-Thank you for your interest in contributing to Rolodex. We're building in public to demonstrate transparency and our technical approach.
+Thank you for your interest in contributing to Dexio. We're building in public to demonstrate transparency and our technical approach.
 
 ---
 
