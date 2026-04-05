@@ -23,6 +23,7 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     title: {
         fontSize: 32,
         fontWeight: 'bold',
+        color: theme.colors.text.primary,
     },
 });
 

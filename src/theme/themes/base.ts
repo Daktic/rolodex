@@ -10,6 +10,7 @@ export const base = {
             disabled: '#AAAAAA',
             inverse: '#FFFFFF',
         },
+        iconColor: '#000000',
         border: '#C6C6C8',
         borderAlt: '#E0E0E0',
         accent: '#007AFF',

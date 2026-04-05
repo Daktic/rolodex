@@ -1,7 +1,7 @@
 import * as LucideIcons from 'lucide-react-native'
 import {siFacebook, siGithub, siSubstack, siTelegram, siWhatsapp, siX} from 'simple-icons'
 import Svg, {Path} from "react-native-svg";
-import {Handshake} from "lucide-react-native";
+import {useTheme} from "@/hooks/useTheme";
 
 const SimpleIcon = ({icon, size = 24, color = 'black'}: {icon: any, size?: number, color?: string}) => {
     return <Svg
@@ -48,12 +48,14 @@ const convertLucideIcons = (iconName: string, size?: number, color?: string) => 
 
 const convertStringToIcon = (iconName?: string, size?: number, color?: string) => {
     if (!iconName) return null;
+    const { theme } = useTheme();
+    const resolvedColor = color ?? theme.colors.iconColor;
 
     const simpleIcon = simpleIconMap[iconName.toLowerCase()];
-    if (simpleIcon) return <SimpleIcon icon={simpleIcon} size={size} color={color} />;
+    if (simpleIcon) return <SimpleIcon icon={simpleIcon} size={size} color={resolvedColor} />;
 
     // Dynamic lucide lookup — name must be PascalCase (e.g. "BriefcaseBusiness")
-    return convertLucideIcons(iconName, size, color);
+    return convertLucideIcons(iconName, size, resolvedColor);
 };
 
 export {convertStringToIcon};

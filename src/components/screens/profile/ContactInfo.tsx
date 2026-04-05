@@ -43,6 +43,7 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     marginBottom: 16,
+    color: theme.colors.text.secondary,
   },
   qrOverlay: {
     flex: 1,

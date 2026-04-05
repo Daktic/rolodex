@@ -8,10 +8,11 @@ export const dark: ThemeOverride = {
         text: {
             primary: '#FFFFFF',
             secondary: '#8E8E93',
-            tertiary: '#636366',
+            tertiary: '#88888c',
             disabled: '#48484A',
             inverse: '#000000',
         },
+        iconColor: '#FFFFFF',
         border: '#38383A',
         borderAlt: '#48484A',
         accent: '#0A84FF',
@@ -19,7 +20,7 @@ export const dark: ThemeOverride = {
         warning: '#FF9F0A',
         success: '#32D74B',
         highlight: '#DAA520',
-        overlay: 'rgba(0, 0, 0, 0.7)',
+        overlay: 'rgb(117 117 117 / 0.95)',
         shadow: '#000000',
         placeholder: '#636366',
         tabBar: {

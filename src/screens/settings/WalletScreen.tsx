@@ -1,18 +1,30 @@
-import {Text, StyleSheet, Button, Alert, Modal, View, Pressable} from "react-native";
+import {Text, StyleSheet, Button, Alert, Modal, View, Pressable, Animated} from "react-native";
 import SettingsScreen from "./SettingsScreen";
 import SettingsSection from "@/components/screens/settingsDetail/SettingsSection";
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {getProfileId} from "@/services/wallet";
 import * as Clipboard from 'expo-clipboard';
 import * as SecureStore from 'expo-secure-store';
 import { useTheme } from '@/hooks/useTheme';
 import type { Theme } from '@/theme/themes/base';
+import { Copy, Check } from 'lucide-react-native';
 
 const getStyles = (theme: Theme) => StyleSheet.create({
+    publicKeyRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        gap: 8,
+    },
     text: {
+        flex: 1,
         fontSize: 16,
-        padding: 16,
         color: theme.colors.text.primary,
+        fontFamily: 'monospace',
+    },
+    copyIcon: {
+        padding: 4,
     },
     button: {
         padding: 16,
@@ -54,6 +66,32 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     closeButton: {
         alignItems: 'center',
         padding: 8,
+    },
+    fullKeyOverlay: {
+        flex: 1,
+        backgroundColor: theme.colors.overlay,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    fullKeyCard: {
+        backgroundColor: theme.colors.surface,
+        borderRadius: 12,
+        padding: 24,
+        width: '85%',
+        gap: 16,
+    },
+    fullKeyTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: theme.colors.text.secondary,
+    },
+    fullKeyText: {
+        fontFamily: 'monospace',
+        fontSize: 13,
+        backgroundColor: theme.colors.surfaceAlt,
+        padding: 12,
+        borderRadius: 8,
+        color: theme.colors.text.secondary,
     },
 });
 
@@ -110,11 +148,27 @@ const WalletScreen = () => {
 
     const [publicKey, setPublicKey] = useState<string | null>(null);
     const [showPrivateKeyDialog, setShowPrivateKeyDialog] = useState<boolean>(false);
-
+    const [showFullPublicKey, setShowFullPublicKey] = useState(false);
+    const [publicKeyCopied, setPublicKeyCopied] = useState(false);
+    const checkOpacity = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
         getProfileId().then(setPublicKey).catch(console.error)
     },[])
+
+    const handleCopyPublicKey = async () => {
+        if (!publicKey) return;
+        await Clipboard.setStringAsync(publicKey);
+        setPublicKeyCopied(true);
+        checkOpacity.setValue(1);
+        setTimeout(() => {
+            Animated.timing(checkOpacity, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+            }).start(() => setPublicKeyCopied(false));
+        }, 1800);
+    };
 
     const handlePrivateKeyExposure = () => {
         Alert.alert(
@@ -134,7 +188,19 @@ const WalletScreen = () => {
     return (
         <SettingsScreen title="">
             <SettingsSection title="Public Key">
-                <Text style={styles.text}>{publicKey}</Text>
+                <View style={styles.publicKeyRow}>
+                    <Text style={styles.text} numberOfLines={1} ellipsizeMode="middle" onLongPress={() => setShowFullPublicKey(true)}>
+                        {publicKey}
+                    </Text>
+                    <Pressable style={styles.copyIcon} onPress={handleCopyPublicKey}>
+                        {publicKeyCopied
+                            ? <Animated.View style={{ opacity: checkOpacity }}>
+                                <Check size={18} color={theme.colors.success} />
+                              </Animated.View>
+                            : <Copy size={18} color={theme.colors.text.secondary} />
+                        }
+                    </Pressable>
+                </View>
             </SettingsSection>
             <SettingsSection title="Private Key">
                 <Button title={"Retrieve Private Key"}
@@ -143,6 +209,17 @@ const WalletScreen = () => {
                 />
             </SettingsSection>
             <PrivateKeyContent visible={showPrivateKeyDialog} setModalVisible={setShowPrivateKeyDialog}/>
+            <Modal visible={showFullPublicKey} transparent animationType="fade">
+                <Pressable style={styles.fullKeyOverlay} onPress={() => setShowFullPublicKey(false)}>
+                    <View style={styles.fullKeyCard}>
+                        <Text style={styles.fullKeyTitle}>Public Key</Text>
+                        <Text selectable style={styles.fullKeyText}>{publicKey}</Text>
+                        <Pressable style={styles.closeButton} onPress={() => setShowFullPublicKey(false)}>
+                            <Text>Done</Text>
+                        </Pressable>
+                    </View>
+                </Pressable>
+            </Modal>
         </SettingsScreen>
     );
 };

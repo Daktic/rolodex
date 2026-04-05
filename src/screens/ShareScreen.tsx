@@ -21,6 +21,7 @@ const getStyles = (theme: Theme) => StyleSheet.create({
         fontWeight: 'bold',
         textAlign: 'center',
         marginBottom: 24,
+        color: theme.colors.text.primary,
     },
     splitButton: {
         flexDirection: 'row',
@@ -51,7 +52,7 @@ const getStyles = (theme: Theme) => StyleSheet.create({
         marginVertical: 10,
     },
     splitButtonText: {
-        color: theme.colors.text.inverse,
+        color: theme.colors.text.secondary,
         fontSize: 15,
         fontWeight: '600',
     },
@@ -89,19 +90,20 @@ const getStyles = (theme: Theme) => StyleSheet.create({
         paddingVertical: 8,
         borderBottomWidth: 1,
         borderBottomColor: theme.colors.borderAlt,
+        alignItems: 'center',
     },
     dataLabel: {
-        color: theme.colors.text.tertiary,
+        color: theme.colors.text.primary,
         fontSize: 14,
         fontWeight: '500',
         flex: 1,
     },
     dataValue: {
-        color: theme.colors.text.inverse,
+        color: theme.colors.text.tertiary,
         fontSize: 14,
         fontWeight: '400',
         flex: 1,
-        textAlign: 'right',
+        textAlign: 'left',
     },
     loadingText: {
         color: theme.colors.text.tertiary,
@@ -144,7 +146,7 @@ export default function ShareScreen() {
                     style={[styles.splitButtonHalf, styles.splitButtonLeft]}
                     onPress={() => { setQrInitialMode('qr'); setQrDialogVisible(true); }}
                 >
-                    <QrCode size={18} color={theme.colors.text.inverse} />
+                    <QrCode size={18} color={theme.colors.iconColor} />
                     <Text style={styles.splitButtonText}>Show QR</Text>
                 </TouchableOpacity>
                 <View style={styles.splitButtonDivider} />
@@ -152,7 +154,7 @@ export default function ShareScreen() {
                     style={[styles.splitButtonHalf, styles.splitButtonRight]}
                     onPress={() => { setQrInitialMode('camera'); setQrDialogVisible(true); }}
                 >
-                    <Camera size={18} color={theme.colors.text.inverse} />
+                    <Camera size={18} color={theme.colors.iconColor} />
                     <Text style={styles.splitButtonText}>Scan</Text>
                 </TouchableOpacity>
             </View>
