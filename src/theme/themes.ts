@@ -2,6 +2,7 @@ import { base, type Theme, type ThemeOverride } from './themes/base';
 import { light } from './themes/light';
 import { dark } from './themes/dark';
 import { highContrast } from './themes/highContrast';
+import { rolodex } from './themes/rolodex';
 import type { ColorSchemeName } from 'react-native';
 import {ThemeOption} from "@/types/settings";
 
@@ -31,5 +32,6 @@ export function resolveTheme(selected: ThemeOption, systemScheme?: ColorSchemeNa
     if (selected === 'light') return mergeTheme(light);
     if (selected === 'dark') return mergeTheme(dark);
     if (selected === 'highContrast') return mergeTheme(highContrast);
+    if (selected === 'rolodex') return mergeTheme(rolodex);
     return systemScheme === 'dark' ? mergeTheme(dark) : mergeTheme(light);
 }

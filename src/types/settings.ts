@@ -9,4 +9,5 @@ export enum ThemeOption {
     DARK = 'dark',
     SYSTEM = 'system',
     HIGH_CONTRAST = 'highContrast',
+    ROLODEX = 'rolodex',
 }
