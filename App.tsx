@@ -1,6 +1,7 @@
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native';
 import AppNavigator from './src/navigation/AppNavigator';
+import { ThemeProvider } from './src/theme/ThemeProvider';
 import {useEffect, useState} from "react";
 import {initDatabase} from "@/services/db";
 import Loading from "./src/components/common/Loading";
@@ -19,7 +20,9 @@ export default function App() {
   }
   return (
     <GestureHandlerRootView style={styles.container}>
-      <AppNavigator />
+      <ThemeProvider>
+        <AppNavigator />
+      </ThemeProvider>
     </GestureHandlerRootView>
   );
 }
