@@ -3,6 +3,7 @@ import { light } from './themes/light';
 import { dark } from './themes/dark';
 import { highContrast } from './themes/highContrast';
 import { rolodex } from './themes/rolodex';
+import { bubbleGum } from './themes/bubbleGum';
 import type { ColorSchemeName } from 'react-native';
 import {ThemeOption} from "@/types/settings";
 
@@ -33,5 +34,6 @@ export function resolveTheme(selected: ThemeOption, systemScheme?: ColorSchemeNa
     if (selected === 'dark') return mergeTheme(dark);
     if (selected === 'highContrast') return mergeTheme(highContrast);
     if (selected === 'rolodex') return mergeTheme(rolodex);
+    if (selected === 'bubbleGum') return mergeTheme(bubbleGum);
     return systemScheme === 'dark' ? mergeTheme(dark) : mergeTheme(light);
 }

@@ -9,7 +9,8 @@ const THEME_OPTIONS: { label: string; value: ThemeOption }[] = [
     { label: 'Light', value: ThemeOption.LIGHT },
     { label: 'Dark', value: ThemeOption.DARK },
     { label: 'High Contrast', value: ThemeOption.HIGH_CONTRAST},
-    {label: 'Rolodex', value: ThemeOption.ROLODEX}
+    {label: 'Rolodex', value: ThemeOption.ROLODEX},
+    {label: 'Bubble Gum', value: ThemeOption.BUBBLE_GUM},
 ];
 
 const AppearanceScreen = () => {

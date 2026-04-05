@@ -10,4 +10,5 @@ export enum ThemeOption {
     SYSTEM = 'system',
     HIGH_CONTRAST = 'highContrast',
     ROLODEX = 'rolodex',
+    BUBBLE_GUM = 'bubbleGum',
 }
