@@ -2,7 +2,7 @@
   "expo": {
     "name": "Dexio",
     "slug": "Dexio",
-    "version": "1.0.0",
+    "version": "1.0.01",
     "orientation": "portrait",
     "icon": "./assets/Dexio_logo_1.png",
     "userInterfaceStyle": "light",
