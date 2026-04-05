@@ -1,8 +1,10 @@
-import {Modal, StyleSheet, TextInput, Text, TouchableOpacity, View, StyleProp, TextStyle, ViewStyle} from "react-native";
+import {Modal, StyleSheet, TextInput, Text, TouchableOpacity, View} from "react-native";
 import DropDownPicker, {ItemType} from "react-native-dropdown-picker";
 import {useEffect, useState} from "react";
-import {getAllNodes, getAllPredicates} from "@/services/storage";
+import {getAllPredicates} from "@/services/storage";
 import {Predicate, SemanticNode, ObjectType} from "@/types/db";
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme/themes/base';
 
 interface AddTripleProps {
     visible: boolean;
@@ -16,15 +18,75 @@ interface AddTripleProps {
     setNewType: (type: ObjectType | null) => void;
 }
 
+const getStyles = (theme: Theme) => StyleSheet.create({
+    dialogOverlay: {
+        flex: 1,
+        backgroundColor: theme.colors.overlay,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    dialogContainer: {
+        backgroundColor: theme.colors.surface,
+        borderRadius: 12,
+        padding: 24,
+        width: '80%',
+        shadowColor: theme.colors.shadow,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+        elevation: 5,
+    },
+    dialogTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 16,
+        textAlign: 'center',
+    },
+    input: {
+        borderWidth: 1,
+        borderColor: theme.colors.borderAlt,
+        borderRadius: 8,
+        padding: 12,
+        fontSize: 16,
+        marginBottom: 12,
+    },
+    dialogButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: 12,
+        marginTop: 8,
+    },
+    button: {
+        flex: 1,
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    cancelButton: {
+        backgroundColor: theme.colors.surfaceAlt,
+    },
+    cancelButtonText: {
+        color: theme.colors.text.secondary,
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    createButton: {
+        backgroundColor: theme.colors.accent,
+    },
+    createButtonText: {
+        color: theme.colors.text.inverse,
+        fontSize: 16,
+        fontWeight: '600',
+    },
+});
+
 const AddTriple = ({
                        visible,
                        setVisible,
                        handleAdd,
-                       newLabel,
                        setNewLabel,
                        newValue,
                        setNewValue,
-                       newType,
                        setNewType
                    }: AddTripleProps) => {
 
@@ -32,6 +94,9 @@ const AddTriple = ({
     const [labelId, setLabelId] = useState<number | null>(null);
     const [predicates, setPredicates] = useState<Predicate[]>([])
     const [labelItems, setLabelItems] = useState<ItemType<number>[]>([]);
+
+    const { theme } = useTheme();
+    const styles = getStyles(theme);
 
     const predicateRefresh = () => {
         getAllPredicates().then(predicates => setPredicates(predicates));
@@ -45,7 +110,7 @@ const AddTriple = ({
     }, [predicates]);
 
     const handlePredicateSelection = (item: ItemType<number>) => {
-        setNewLabel(predicates.find(p => p.id === item.value) ?? { id: -1, label: item.label ?? '', object_type_id: null });
+        setNewLabel(predicates.find(p => p.id === item.value) ?? { id: -1, label: item.label ?? '', icon_id: null });
     };
 
 
@@ -70,7 +135,7 @@ const AddTriple = ({
                     <TextInput
                         style={styles.input}
                         placeholder="Value"
-                        placeholderTextColor="#999"
+                        placeholderTextColor={theme.colors.placeholder}
                         value={newValue?.value ?? ''}
                         onChangeText={text => setNewValue({ ...(newValue ?? { id: -1, type: null, label: '' }), value: text })}
                     />
@@ -101,65 +166,3 @@ const AddTriple = ({
 }
 
 export default AddTriple;
-
-const styles = StyleSheet.create({
-    dialogOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    dialogContainer: {
-        backgroundColor: 'white',
-        borderRadius: 12,
-        padding: 24,
-        width: '80%',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
-        elevation: 5,
-    },
-    dialogTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginBottom: 16,
-        textAlign: 'center',
-    },
-    input: {
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 8,
-        padding: 12,
-        fontSize: 16,
-        marginBottom: 12,
-    },
-    dialogButtons: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        gap: 12,
-        marginTop: 8,
-    },
-    button: {
-        flex: 1,
-        padding: 12,
-        borderRadius: 8,
-        alignItems: 'center',
-    },
-    cancelButton: {
-        backgroundColor: '#f0f0f0',
-    },
-    cancelButtonText: {
-        color: '#666',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    createButton: {
-        backgroundColor: '#007AFF',
-    },
-    createButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-})

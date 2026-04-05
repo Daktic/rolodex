@@ -4,6 +4,8 @@ import { Swipeable } from 'react-native-gesture-handler';
 import { Mask } from '@/types/db';
 import { setMaskFields, getMaskFields } from '@/services/storage';
 import {convertStringToIcon} from "@/utils/icons";
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme/themes/base';
 
 interface KeyValueBoxProps {
   initialKey?: string;
@@ -22,6 +24,112 @@ interface KeyValueBoxProps {
   onMaskToggle?: (fieldId: number, isMasked: boolean) => void;
   nubIcon?: string;
 }
+
+const getStyles = (theme: Theme) => StyleSheet.create({
+  outerContainer: {
+    marginBottom: 12,
+    width: '100%',
+  },
+  container: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: theme.colors.borderAlt,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: theme.colors.surface,
+  },
+  keyContainer: {
+    width: '35%',
+    flexDirection: 'row',
+    backgroundColor: theme.colors.surfaceAlt,
+    borderRightWidth: 1,
+    borderRightColor: theme.colors.borderAlt,
+  },
+  keyIconSection: {
+    width: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  keyTextSection: {
+    flex: 1,
+    padding: 12,
+    justifyContent: 'center',
+  },
+  valueContainer: {
+    flex: 1,
+    backgroundColor: theme.colors.surface,
+    padding: 12,
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  maskOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: theme.colors.overlay,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  keyInput: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+  },
+  keyText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+  },
+  valueInput: {
+    fontSize: 12,
+    color: theme.colors.text.primary,
+  },
+  valueText: {
+    fontSize: 12,
+    color: theme.colors.text.primary,
+  },
+  maskButton: {
+    backgroundColor: theme.colors.text.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    marginRight: -8,
+    paddingRight: 8,
+    borderTopLeftRadius: 8,
+    borderBottomLeftRadius: 8,
+  },
+  maskText: {
+    color: theme.colors.text.inverse,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  deleteButton: {
+    backgroundColor: theme.colors.danger,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    marginLeft: -8,
+    paddingLeft: 8,
+    borderTopRightRadius: 8,
+    borderBottomRightRadius: 8,
+  },
+  deleteText: {
+    color: theme.colors.text.inverse,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  deleteButtonDisabled: {
+    backgroundColor: theme.colors.text.disabled,
+  },
+  maskedText: {
+    fontSize: 14,
+    color: theme.colors.text.inverse,
+    fontWeight: '600',
+    fontStyle: 'italic',
+  },
+});
 
 export default function KeyValueBox({
   initialKey = '',
@@ -47,6 +155,9 @@ export default function KeyValueBox({
   const [labelMasked, setLabelMasked] = useState(isMasked);
   const maskAnim = useRef(new Animated.Value(isMasked ? 0 : 400)).current;
   const swipeableRef = useRef<Swipeable>(null);
+
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
 
   useEffect(() => {
     if (valueWidth === 0) return;
@@ -211,7 +322,7 @@ export default function KeyValueBox({
                 onChangeText={handleValueChange}
                 onBlur={handleBlur}
                 placeholder="Value"
-                placeholderTextColor="#999"
+                placeholderTextColor={theme.colors.placeholder}
                 autoCapitalize={'none'}
                 autoCorrect={false}
               />
@@ -230,109 +341,3 @@ export default function KeyValueBox({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  outerContainer: {
-    marginBottom: 12,
-    width: '100%',
-  },
-  container: {
-    flexDirection: 'row',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: '#fff',
-  },
-  keyContainer: {
-    width: '35%',
-    flexDirection: 'row',
-    backgroundColor: '#f8f8f8',
-    borderRightWidth: 1,
-    borderRightColor: '#e0e0e0',
-  },
-  keyIconSection: {
-    width: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  keyTextSection: {
-    flex: 1,
-    padding: 12,
-    justifyContent: 'center',
-  },
-  valueContainer: {
-    flex: 1,
-    backgroundColor: '#fff',
-    padding: 12,
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  maskOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.85)',
-    justifyContent: 'center',
-    paddingHorizontal: 12,
-  },
-  keyInput: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-  },
-  keyText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#555',
-  },
-  valueInput: {
-    fontSize: 12,
-    color: '#333',
-  },
-  valueText: {
-    fontSize: 12,
-    color: '#333',
-  },
-  maskButton: {
-    backgroundColor: '#000',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 80,
-    marginRight: -8,
-    paddingRight: 8,
-    borderTopLeftRadius: 8,
-    borderBottomLeftRadius: 8,
-  },
-  maskText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  deleteButton: {
-    backgroundColor: '#ff3b30',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 80,
-    marginLeft: -8,
-    paddingLeft: 8,
-    borderTopRightRadius: 8,
-    borderBottomRightRadius: 8,
-  },
-  deleteText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  deleteButtonDisabled: {
-    backgroundColor: '#ccc',
-  },
-  maskedText: {
-    fontSize: 14,
-    color: '#fff',
-    fontWeight: '600',
-    fontStyle: 'italic',
-  },
-});

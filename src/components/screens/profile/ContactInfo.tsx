@@ -27,10 +27,35 @@ import {
   KVBContextMenuActionId,
   resolveProfileFieldContextActions,
 } from '@/services/contextMenu';
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme/themes/base';
 
 interface ContactInfoProps {
   currentMask: Mask | null;
 }
+
+const getStyles = (theme: Theme) => StyleSheet.create({
+  container: {
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  qrOverlay: {
+    flex: 1,
+    backgroundColor: theme.colors.overlay,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  qrContainer: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: 16,
+    padding: 16,
+  },
+});
 
 export default function ContactInfo({ currentMask }: ContactInfoProps) {
   const [fields, setFields] = useState<KeyValuePair[]>([]);
@@ -43,6 +68,8 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
   const [qrValue, setQrValue] = useState<string | null>(null);
   const [predicateObjects, setPredicateObjects] = useState<Predicates[]>([]);
 
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
 
   // Load profile ID on mount
   useEffect(() => {
@@ -257,26 +284,3 @@ export default function ContactInfo({ currentMask }: ContactInfoProps) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 16,
-  },
-  qrOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  qrContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-  },
-});

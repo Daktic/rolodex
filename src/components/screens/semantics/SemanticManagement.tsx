@@ -2,11 +2,41 @@ import {Animated, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View}
 import {useRef, useState} from "react";
 import PredicatesTab from "@/components/screens/semantics/Predicates";
 import ObjectTypesTab from "@/components/screens/semantics/ObjectTypes";
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme/themes/base';
+
+const getStyles = (theme: Theme) => StyleSheet.create({
+    container: {flex: 1},
+    tabBar: {
+        flexDirection: 'row',
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.borderAlt,
+    },
+    tab: {
+        flex: 1,
+        paddingVertical: 12,
+        alignItems: 'center',
+        borderBottomWidth: 2,
+        borderBottomColor: 'transparent',
+    },
+    tabActive: {borderBottomColor: theme.colors.accent},
+    tabText: {fontSize: 14, fontWeight: '600', color: theme.colors.text.tertiary},
+    tabTextActive: {color: theme.colors.accent},
+    slideWindow: {flex: 1, overflow: 'hidden'},
+    slideContainer: {flex: 1, flexDirection: 'row'},
+    tabContent: {
+        flex: 1,
+        paddingHorizontal: 20,
+        paddingTop: 16,
+    },
+});
 
 const SemanticManagement = () => {
     const {width} = useWindowDimensions();
     const [activeTab, setActiveTab] = useState<0 | 1>(0);
     const translateX = useRef(new Animated.Value(0)).current;
+    const { theme } = useTheme();
+    const styles = getStyles(theme);
 
     const switchTab = (tab: 0 | 1) => {
         setActiveTab(tab);
@@ -53,29 +83,3 @@ const SemanticManagement = () => {
 };
 
 export default SemanticManagement;
-
-const styles = StyleSheet.create({
-    container: {flex: 1},
-    tabBar: {
-        flexDirection: 'row',
-        borderBottomWidth: 1,
-        borderBottomColor: '#e0e0e0',
-    },
-    tab: {
-        flex: 1,
-        paddingVertical: 12,
-        alignItems: 'center',
-        borderBottomWidth: 2,
-        borderBottomColor: 'transparent',
-    },
-    tabActive: {borderBottomColor: '#007AFF'},
-    tabText: {fontSize: 14, fontWeight: '600', color: '#999'},
-    tabTextActive: {color: '#007AFF'},
-    slideWindow: {flex: 1, overflow: 'hidden'},
-    slideContainer: {flex: 1, flexDirection: 'row'},
-    tabContent: {
-        flex: 1,
-        paddingHorizontal: 20,
-        paddingTop: 16,
-    },
-});

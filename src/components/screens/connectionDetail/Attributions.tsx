@@ -5,6 +5,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getConnectionFields, getAnnotations, upsertAnnotation, deleteAnnotation } from '@/services/storage';
 import AddTriple from "@/dialogs/AddTriple";
 import {SemanticNode, ObjectType, Predicate} from "@/types/db";
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme/themes/base';
 
 interface AttributionItem {
   id: number;
@@ -18,6 +20,94 @@ interface AttributionsProps {
   connectionId: number;
 }
 
+const getStyles = (theme: Theme) => StyleSheet.create({
+  container: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  kvBox: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderColor: theme.colors.borderAlt,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginBottom: 12,
+    backgroundColor: theme.colors.surface,
+  },
+  lockedBox: {
+    borderColor: theme.colors.highlight,
+    borderWidth: 2,
+    shadowColor: theme.colors.highlight,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  keyContainer: {
+    flex: 1,
+    backgroundColor: theme.colors.surfaceAlt,
+    padding: 12,
+    borderRightWidth: 1,
+    borderRightColor: theme.colors.borderAlt,
+  },
+  valueContainer: {
+    flex: 2,
+    backgroundColor: theme.colors.surface,
+    padding: 12,
+  },
+  keyInput: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+  },
+  keyText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+  },
+  valueInput: {
+    fontSize: 14,
+    color: theme.colors.text.primary,
+  },
+  valueText: {
+    fontSize: 14,
+    color: theme.colors.text.primary,
+  },
+  deleteContainer: {
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    marginBottom: 12,
+  },
+  deleteActionButton: {
+    backgroundColor: theme.colors.danger,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    height: '100%',
+    borderTopRightRadius: 8,
+    borderBottomRightRadius: 8,
+  },
+  deleteText: {
+    color: theme.colors.text.inverse,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  addButton: {
+    borderWidth: 1,
+    borderColor: theme.colors.borderAlt,
+    borderRadius: 8,
+    borderStyle: 'dashed',
+    padding: 16,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  addButtonText: {
+    fontSize: 14,
+    color: theme.colors.text.secondary,
+    fontWeight: '600',
+  },
+});
+
 export default function Attributions({ connectionId }: AttributionsProps) {
   const [items, setItems] = useState<AttributionItem[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -25,6 +115,9 @@ export default function Attributions({ connectionId }: AttributionsProps) {
   const [newLabel, setNewLabel] = useState<Predicate | null>(null);
   const [newValue, setNewValue] = useState<SemanticNode | null>(null);
   const [newType, setNewType] = useState<ObjectType | null>(null);
+
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
 
   useEffect(() => {
     loadAttributions();
@@ -178,7 +271,7 @@ export default function Attributions({ connectionId }: AttributionsProps) {
                   }}
                   onBlur={() => handleUpdate(item.id, item.label, item.value)}
                   placeholder="Label"
-                  placeholderTextColor="#999"
+                  placeholderTextColor={theme.colors.placeholder}
                 />
               ) : (
                 <Text style={styles.keyText}>{item.label}</Text>
@@ -198,7 +291,7 @@ export default function Attributions({ connectionId }: AttributionsProps) {
                   }}
                   onBlur={() => handleUpdate(item.id, item.label, item.value)}
                   placeholder="Value"
-                  placeholderTextColor="#999"
+                  placeholderTextColor={theme.colors.placeholder}
                 />
               ) : (
                 <Text style={styles.valueText}>{item.value}</Text>
@@ -235,92 +328,3 @@ export default function Attributions({ connectionId }: AttributionsProps) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  kvBox: {
-    flexDirection: 'row',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    overflow: 'hidden',
-    marginBottom: 12,
-    backgroundColor: '#fff',
-  },
-  lockedBox: {
-    borderColor: '#DAA520',
-    borderWidth: 2,
-    shadowColor: '#DAA520',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  keyContainer: {
-    flex: 1,
-    backgroundColor: '#f8f8f8',
-    padding: 12,
-    borderRightWidth: 1,
-    borderRightColor: '#e0e0e0',
-  },
-  valueContainer: {
-    flex: 2,
-    backgroundColor: '#fff',
-    padding: 12,
-  },
-  keyInput: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-  },
-  keyText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-  },
-  valueInput: {
-    fontSize: 14,
-    color: '#333',
-  },
-  valueText: {
-    fontSize: 14,
-    color: '#333',
-  },
-  deleteContainer: {
-    justifyContent: 'center',
-    alignItems: 'flex-end',
-    marginBottom: 12,
-  },
-  deleteActionButton: {
-    backgroundColor: '#ff3b30',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 80,
-    height: '100%',
-    borderTopRightRadius: 8,
-    borderBottomRightRadius: 8,
-  },
-  deleteText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  addButton: {
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    borderStyle: 'dashed',
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  addButtonText: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '600',
-  },
-
-});

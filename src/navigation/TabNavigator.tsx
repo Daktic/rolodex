@@ -4,6 +4,7 @@ import ProfileStack from './ProfileStack';
 import ConnectionsStack from './ConnectionsStack';
 import SettingsStack from './SettingsStack';
 import SemanticsStack from "@/navigation/SemanticsStack";
+import { useTheme } from '@/hooks/useTheme';
 
 export type TabParamList = {
   ProfileTab: undefined;
@@ -15,16 +16,17 @@ export type TabParamList = {
 const Tab = createBottomTabNavigator<TabParamList>();
 
 export default function TabNavigator() {
+  const { theme } = useTheme();
   return (
     <Tab.Navigator
       initialRouteName="ProfileTab"
       screenOptions={{
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: '#8E8E93',
+        tabBarActiveTintColor: theme.colors.tabBar.active,
+        tabBarInactiveTintColor: theme.colors.tabBar.inactive,
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: theme.colors.tabBar.background,
           borderTopWidth: 1,
-          borderTopColor: '#E0E0E0',
+          borderTopColor: theme.colors.tabBar.border,
           height: 80,
           paddingBottom: 8,
           paddingTop: 8,
