@@ -1,6 +1,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import ConnectionsListScreen from '../screens/ConnectionsListScreen';
 import ConnectionDetailScreen from '../screens/ConnectionDetailScreen';
+import { useTheme } from '@/hooks/useTheme';
 
 export type ConnectionsStackParamList = {
   ConnectionsList: undefined;
@@ -11,8 +12,13 @@ export type ConnectionsStackParamList = {
 const Stack = createNativeStackNavigator<ConnectionsStackParamList>();
 
 export default function ConnectionsStack() {
+  const { theme } = useTheme();
   return (
-    <Stack.Navigator>
+    <Stack.Navigator screenOptions={{
+      headerStyle: { backgroundColor: theme.colors.surface },
+      headerTintColor: theme.colors.accent,
+      headerTitleStyle: { color: theme.colors.text.primary },
+    }}>
       <Stack.Screen
         name="ConnectionsList"
         component={ConnectionsListScreen}

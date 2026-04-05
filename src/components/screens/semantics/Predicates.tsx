@@ -6,6 +6,8 @@ import KVBContainer from "@/components/common/KVBContainer";
 import {useFocusEffect, useNavigation} from "@react-navigation/native";
 import {NativeStackNavigationProp} from "@react-navigation/native-stack";
 import {SemanticStackParamList} from "@/navigation/SemanticsStack";
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme/themes/base';
 
 interface AddPredicateModalProps {
     visible: boolean;
@@ -13,8 +15,87 @@ interface AddPredicateModalProps {
     onAdd: (id: number) => void;
 }
 
+const getStyles = (theme: Theme) => StyleSheet.create({
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+    },
+    columnHeaders: {
+        flexDirection: 'row',
+        flex: 1,
+    },
+    columnHeaderKey: {
+        width: '35%',
+        fontSize: 11,
+        fontWeight: '600',
+        color: theme.colors.text.tertiary,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    columnHeaderValue: {
+        flex: 1,
+        fontSize: 11,
+        fontWeight: '600',
+        color: theme.colors.text.tertiary,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    dialogOverlay: {
+        flex: 1,
+        backgroundColor: theme.colors.overlay,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    dialogContainer: {
+        backgroundColor: theme.colors.surface,
+        borderRadius: 12,
+        padding: 24,
+        width: '80%',
+        shadowColor: theme.colors.shadow,
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+        elevation: 5,
+    },
+    dialogTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 16,
+        textAlign: 'center',
+    },
+    input: {
+        borderWidth: 1,
+        borderColor: theme.colors.borderAlt,
+        borderRadius: 8,
+        padding: 12,
+        marginBottom: 12,
+        fontSize: 15,
+        color: theme.colors.text.primary,
+    },
+    dialogButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: 12,
+        marginTop: 8,
+    },
+    button: {
+        flex: 1,
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    cancelButton: {backgroundColor: theme.colors.surfaceAlt},
+    cancelButtonText: {color: theme.colors.text.secondary, fontSize: 16, fontWeight: '600'},
+    createButton: {backgroundColor: theme.colors.accent},
+    createButtonText: {color: theme.colors.text.inverse, fontSize: 16, fontWeight: '600'},
+});
+
 const AddPredicateModal = ({visible, setVisible, onAdd}: AddPredicateModalProps) => {
     const [label, setLabel] = useState('');
+    const { theme } = useTheme();
+    const styles = getStyles(theme);
 
     const handleAdd = async () => {
         if (!label.trim()) return;
@@ -36,7 +117,7 @@ const AddPredicateModal = ({visible, setVisible, onAdd}: AddPredicateModalProps)
                     <TextInput
                         style={styles.input}
                         placeholder="Predicate label..."
-                        placeholderTextColor="#999"
+                        placeholderTextColor={theme.colors.placeholder}
                         value={label}
                         onChangeText={setLabel}
                         autoFocus
@@ -59,6 +140,8 @@ const PredicatesTab = () => {
     const navigation = useNavigation<NativeStackNavigationProp<SemanticStackParamList>>();
     const [predicateObjects, setPredicateObjects] = useState<PredicateWithObject[]>([]);
     const [dialogVisible, setDialogVisible] = useState(false);
+    const { theme } = useTheme();
+    const styles = getStyles(theme);
 
     const refresh = () => getAllPredicateObjects().then(setPredicateObjects);
 
@@ -98,80 +181,3 @@ const PredicatesTab = () => {
 };
 
 export default PredicatesTab;
-
-const styles = StyleSheet.create({
-    sectionHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 12,
-    },
-    columnHeaders: {
-        flexDirection: 'row',
-        flex: 1,
-    },
-    columnHeaderKey: {
-        width: '35%',
-        fontSize: 11,
-        fontWeight: '600',
-        color: '#999',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-    },
-    columnHeaderValue: {
-        flex: 1,
-        fontSize: 11,
-        fontWeight: '600',
-        color: '#999',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-    },
-    dialogOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    dialogContainer: {
-        backgroundColor: 'white',
-        borderRadius: 12,
-        padding: 24,
-        width: '80%',
-        shadowColor: '#000',
-        shadowOffset: {width: 0, height: 2},
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
-        elevation: 5,
-    },
-    dialogTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginBottom: 16,
-        textAlign: 'center',
-    },
-    input: {
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 8,
-        padding: 12,
-        marginBottom: 12,
-        fontSize: 15,
-        color: '#333',
-    },
-    dialogButtons: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        gap: 12,
-        marginTop: 8,
-    },
-    button: {
-        flex: 1,
-        padding: 12,
-        borderRadius: 8,
-        alignItems: 'center',
-    },
-    cancelButton: {backgroundColor: '#f0f0f0'},
-    cancelButtonText: {color: '#666', fontSize: 16, fontWeight: '600'},
-    createButton: {backgroundColor: '#007AFF'},
-    createButtonText: {color: 'white', fontSize: 16, fontWeight: '600'},
-});

@@ -5,13 +5,169 @@ import {deleteMask, getMasks, upsertMask} from "@/services/storage";
 import { getProfileId } from "@/services/wallet";
 import {Mask} from "@/types/db";
 import Swipeable from "react-native-gesture-handler/Swipeable";
-
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme/themes/base';
 
 
 interface MasksProps {
     onMaskChange?: (mask: Mask | null) => void;
     onSharePress?: () => void;
 }
+
+const getStyles = (theme: Theme) => StyleSheet.create({
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingTop: 60,
+        paddingHorizontal: 20,
+        paddingBottom: 10,
+    },
+    icon: {
+        marginRight: 12,
+    },
+    titleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    title: {
+        fontSize: 32,
+        fontWeight: 'bold',
+        color: theme.colors.text.primary,
+    },
+    chevron: {
+        marginLeft: 8,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: theme.colors.overlay,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    dropdownContainer: {
+        backgroundColor: theme.colors.surface,
+        borderRadius: 12,
+        width: '80%',
+        maxHeight: 400,
+        shadowColor: theme.colors.shadow,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+        elevation: 5,
+    },
+    scrollView: {
+        maxHeight: 400,
+    },
+    dropdownItem: {
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.surfaceAlt,
+        backgroundColor: theme.colors.surface,
+    },
+    dropdownItemText: {
+        fontSize: 18,
+        color: theme.colors.text.primary,
+    },
+    deleteAction: {
+        backgroundColor: theme.colors.danger,
+        justifyContent: 'center',
+        alignItems: 'flex-end',
+        width: 80,
+    },
+    deleteActionButton: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 80,
+        height: '100%',
+    },
+    addNewItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderBottomWidth: 0,
+    },
+    addNewText: {
+        fontSize: 18,
+        color: theme.colors.accent,
+        marginLeft: 8,
+    },
+    dialogOverlay: {
+        flex: 1,
+        backgroundColor: theme.colors.overlay,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    deleteDialogOverlay: {
+        flex: 1,
+        backgroundColor: theme.colors.overlay,
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1000,
+    },
+    dialogContainer: {
+        backgroundColor: theme.colors.surface,
+        borderRadius: 12,
+        padding: 24,
+        width: '80%',
+        shadowColor: theme.colors.shadow,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+        elevation: 5,
+    },
+    dialogTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 16,
+        textAlign: 'center',
+    },
+    input: {
+        borderWidth: 1,
+        borderColor: theme.colors.borderAlt,
+        borderRadius: 8,
+        padding: 12,
+        fontSize: 16,
+        marginBottom: 20,
+    },
+    dialogButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: 12,
+    },
+    button: {
+        flex: 1,
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    cancelButton: {
+        backgroundColor: theme.colors.surfaceAlt,
+    },
+    cancelButtonText: {
+        color: theme.colors.text.secondary,
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    createButton: {
+        backgroundColor: theme.colors.accent,
+    },
+    createButtonText: {
+        color: theme.colors.text.inverse,
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    deleteButton: {
+        backgroundColor: theme.colors.danger,
+    },
+    deleteButtonText: {
+        color: theme.colors.text.inverse,
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    shareButton: {
+        padding: 8,
+        marginLeft: 'auto',
+    },
+});
 
 export default function Masks({ onMaskChange, onSharePress }: MasksProps) {
     const [currentMask, setCurrentMask] = useState<Mask | null>(null);
@@ -20,6 +176,9 @@ export default function Masks({ onMaskChange, onSharePress }: MasksProps) {
     const [dialogVisible, setDialogVisible] = useState(false);
     const [newMaskName, setNewMaskName] = useState("");
     const [profileId, setProfileId] = useState<string | null>(null);
+
+    const { theme } = useTheme();
+    const styles = getStyles(theme);
 
     useEffect(() => {
         getProfileId().then(id => {
@@ -115,7 +274,7 @@ export default function Masks({ onMaskChange, onSharePress }: MasksProps) {
                     style={styles.deleteActionButton}
                     onPress={() => handleDeleteMask(mask)}
                 >
-                    <Trash2 size={20} color="#FFF" />
+                    <Trash2 size={20} color={theme.colors.text.inverse} />
                 </TouchableOpacity>
             </Animated.View>
         );
@@ -125,7 +284,7 @@ export default function Masks({ onMaskChange, onSharePress }: MasksProps) {
         // Show loading state while masks are being fetched
         return (
             <View style={styles.header}>
-                <Drama size={32} color="#000" style={styles.icon} />
+                <Drama size={32} color={theme.colors.text.primary} style={styles.icon} />
                 <View style={styles.titleContainer}>
                     <Text style={styles.title}>Loading...</Text>
                 </View>
@@ -136,19 +295,19 @@ export default function Masks({ onMaskChange, onSharePress }: MasksProps) {
     return (
         <>
             <View style={styles.header}>
-                <Drama size={32} color="#000" style={styles.icon} />
+                <Drama size={32} color={theme.colors.text.primary} style={styles.icon} />
                 <TouchableOpacity
                     style={styles.titleContainer}
                     onPress={() => setDropdownVisible(true)}
                 >
                     <Text style={styles.title}>{currentMask.name}</Text>
-                    <ChevronDown size={24} color="#000" style={styles.chevron} />
+                    <ChevronDown size={24} color={theme.colors.text.primary} style={styles.chevron} />
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={styles.shareButton}
                     onPress={onSharePress}
                 >
-                    <Share size={24} color="#007AFF" />
+                    <Share size={24} color={theme.colors.accent} />
                 </TouchableOpacity>
             </View>
 
@@ -190,7 +349,7 @@ export default function Masks({ onMaskChange, onSharePress }: MasksProps) {
                                     style={[styles.dropdownItem, styles.addNewItem]}
                                     onPress={handleAddNewMask}
                                 >
-                                    <Plus size={20} color="#007AFF" />
+                                    <Plus size={20} color={theme.colors.accent} />
                                     <Text style={styles.addNewText}>Add New Mask</Text>
                                 </TouchableOpacity>
                             </ScrollView>
@@ -239,157 +398,3 @@ export default function Masks({ onMaskChange, onSharePress }: MasksProps) {
         </>
     );
 }
-
-const styles = StyleSheet.create({
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingTop: 60,
-        paddingHorizontal: 20,
-        paddingBottom: 10,
-    },
-    icon: {
-        marginRight: 12,
-    },
-    titleContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    title: {
-        fontSize: 32,
-        fontWeight: 'bold',
-    },
-    chevron: {
-        marginLeft: 8,
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    dropdownContainer: {
-        backgroundColor: 'white',
-        borderRadius: 12,
-        width: '80%',
-        maxHeight: 400,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
-        elevation: 5,
-    },
-    scrollView: {
-        maxHeight: 400,
-    },
-    dropdownItem: {
-        padding: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
-        backgroundColor: 'white',
-    },
-    dropdownItemText: {
-        fontSize: 18,
-        color: '#000',
-    },
-    deleteAction: {
-        backgroundColor: '#FF3B30',
-        justifyContent: 'center',
-        alignItems: 'flex-end',
-        width: 80,
-    },
-    deleteActionButton: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: 80,
-        height: '100%',
-    },
-    addNewItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderBottomWidth: 0,
-    },
-    addNewText: {
-        fontSize: 18,
-        color: '#007AFF',
-        marginLeft: 8,
-    },
-    dialogOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    deleteDialogOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 1000,
-    },
-    dialogContainer: {
-        backgroundColor: 'white',
-        borderRadius: 12,
-        padding: 24,
-        width: '80%',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
-        elevation: 5,
-    },
-    dialogTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginBottom: 16,
-        textAlign: 'center',
-    },
-    input: {
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 8,
-        padding: 12,
-        fontSize: 16,
-        marginBottom: 20,
-    },
-    dialogButtons: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        gap: 12,
-    },
-    button: {
-        flex: 1,
-        padding: 12,
-        borderRadius: 8,
-        alignItems: 'center',
-    },
-    cancelButton: {
-        backgroundColor: '#f0f0f0',
-    },
-    cancelButtonText: {
-        color: '#666',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    createButton: {
-        backgroundColor: '#007AFF',
-    },
-    createButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    deleteButton: {
-        backgroundColor: '#FF3B30',
-    },
-    deleteButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    shareButton: {
-        padding: 8,
-        marginLeft: 'auto',
-    },
-});

@@ -1,6 +1,7 @@
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native';
 import AppNavigator from './src/navigation/AppNavigator';
+import { ThemeProvider } from '@/theme/ThemeProvider';
 import {useEffect, useState} from "react";
 import {initDatabase} from "@/services/db";
 import Loading from "./src/components/common/Loading";
@@ -14,12 +15,11 @@ export default function App() {
     }
     setUp();
   },[])
-  if (!dbReady) {
-    return <Loading visible={true} />;
-  }
   return (
     <GestureHandlerRootView style={styles.container}>
-      <AppNavigator />
+      <ThemeProvider>
+        {!dbReady ? <Loading visible={true} /> : <AppNavigator />}
+      </ThemeProvider>
     </GestureHandlerRootView>
   );
 }

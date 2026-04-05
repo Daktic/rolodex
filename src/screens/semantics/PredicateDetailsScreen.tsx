@@ -17,11 +17,130 @@ import {
 } from '@/services/storage';
 import KVBContainer from '@/components/common/KVBContainer';
 import {convertStringToIcon} from '@/utils/icons';
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme/themes/base';
 
 type Props = NativeStackScreenProps<SemanticStackParamList, 'PredicateDetail'>;
 
+const getStyles = (theme: Theme) => StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: theme.colors.surface,
+    },
+    content: {
+        padding: 20,
+        paddingBottom: 100,
+    },
+    section: {
+        marginBottom: 24,
+    },
+    iconSection: {
+        zIndex: 1000,
+    },
+    sectionLabel: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: theme.colors.text.tertiary,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginBottom: 8,
+    },
+    input: {
+        borderWidth: 1,
+        borderColor: theme.colors.borderAlt,
+        borderRadius: 8,
+        padding: 12,
+        fontSize: 15,
+        color: theme.colors.text.primary,
+    },
+    iconItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 12,
+    },
+    iconItemSelected: {
+        backgroundColor: theme.colors.surfaceAlt,
+    },
+    iconItemIcon: {
+        width: 28,
+        alignItems: 'center',
+    },
+    iconItemLabel: {
+        marginLeft: 10,
+        fontSize: 14,
+        color: theme.colors.text.primary,
+    },
+    // Modal
+    overlay: {
+        flex: 1,
+        backgroundColor: theme.colors.overlay,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContainer: {
+        backgroundColor: theme.colors.surface,
+        borderRadius: 12,
+        padding: 24,
+        width: '80%',
+        shadowColor: theme.colors.shadow,
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+        elevation: 5,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 16,
+        textAlign: 'center',
+    },
+    pickerRow: {
+        marginBottom: 12,
+        zIndex: 1000,
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        gap: 12,
+        marginTop: 8,
+    },
+    button: {
+        flex: 1,
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    cancelButton: {backgroundColor: theme.colors.surfaceAlt},
+    cancelButtonText: {color: theme.colors.text.secondary, fontSize: 16, fontWeight: '600'},
+    addButton: {backgroundColor: theme.colors.accent},
+    addButtonText: {color: theme.colors.text.inverse, fontSize: 16, fontWeight: '600'},
+    selectedIconField: {
+        borderWidth: 1,
+        borderColor: theme.colors.borderAlt,
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+        backgroundColor: theme.colors.surface,
+    },
+    selectedIconText: {
+        fontSize: 15,
+        color: theme.colors.text.primary,
+    },
+    placeholderText: {
+        color: theme.colors.text.tertiary,
+    },
+    noneLabel: {
+        color: theme.colors.text.tertiary,
+        fontStyle: 'italic',
+    },
+});
+
 const PredicateDetailsScreen = ({route}: Props) => {
     const {predicateId} = route.params;
+    const { theme } = useTheme();
+    const styles = getStyles(theme);
 
     const [label, setLabel] = useState('');
     const [iconId, setIconId] = useState<number | null>(null);
@@ -148,7 +267,7 @@ const PredicateDetailsScreen = ({route}: Props) => {
                     onChangeText={setLabel}
                     onBlur={handleLabelBlur}
                     placeholder="Predicate name..."
-                    placeholderTextColor="#999"
+                    placeholderTextColor={theme.colors.placeholder}
                 />
             </View>
 
@@ -212,118 +331,3 @@ const PredicateDetailsScreen = ({route}: Props) => {
 };
 
 export default PredicateDetailsScreen;
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#fff',
-    },
-    content: {
-        padding: 20,
-        paddingBottom: 100,
-    },
-    section: {
-        marginBottom: 24,
-    },
-    iconSection: {
-        zIndex: 1000,
-    },
-    sectionLabel: {
-        fontSize: 11,
-        fontWeight: '600',
-        color: '#999',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-        marginBottom: 8,
-    },
-    input: {
-        borderWidth: 1,
-        borderColor: '#e0e0e0',
-        borderRadius: 8,
-        padding: 12,
-        fontSize: 15,
-        color: '#333',
-    },
-    iconItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 12,
-    },
-    iconItemSelected: {
-        backgroundColor: '#f0f0f0',
-    },
-    iconItemIcon: {
-        width: 28,
-        alignItems: 'center',
-    },
-    iconItemLabel: {
-        marginLeft: 10,
-        fontSize: 14,
-        color: '#333',
-    },
-    // Modal
-    overlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    modalContainer: {
-        backgroundColor: 'white',
-        borderRadius: 12,
-        padding: 24,
-        width: '80%',
-        shadowColor: '#000',
-        shadowOffset: {width: 0, height: 2},
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
-        elevation: 5,
-    },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginBottom: 16,
-        textAlign: 'center',
-    },
-    pickerRow: {
-        marginBottom: 12,
-        zIndex: 1000,
-    },
-    modalButtons: {
-        flexDirection: 'row',
-        gap: 12,
-        marginTop: 8,
-    },
-    button: {
-        flex: 1,
-        padding: 12,
-        borderRadius: 8,
-        alignItems: 'center',
-    },
-    cancelButton: {backgroundColor: '#f0f0f0'},
-    cancelButtonText: {color: '#666', fontSize: 16, fontWeight: '600'},
-    addButton: {backgroundColor: '#007AFF'},
-    addButtonText: {color: 'white', fontSize: 16, fontWeight: '600'},
-    selectedIconField: {
-        borderWidth: 1,
-        borderColor: '#e0e0e0',
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        paddingVertical: 12,
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 8,
-        backgroundColor: '#fff',
-    },
-    selectedIconText: {
-        fontSize: 15,
-        color: '#333',
-    },
-    placeholderText: {
-        color: '#999',
-    },
-    noneLabel: {
-        color: '#999',
-        fontStyle: 'italic',
-    },
-});

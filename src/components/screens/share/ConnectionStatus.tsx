@@ -1,13 +1,41 @@
 import { StyleSheet, Text, View, Animated } from "react-native";
 import { useEffect, useRef } from "react";
 import { ConnectionState } from "./NFCListener";
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme/themes/base';
 
 interface ConnectionStatusProps {
     status: ConnectionState;
 }
 
+const getStyles = (theme: Theme) => StyleSheet.create({
+    connectionStatus: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 24,
+        paddingVertical: 16,
+        backgroundColor: theme.colors.surfaceAlt,
+        borderRadius: 12,
+    },
+    pulsingDot: {
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        backgroundColor: theme.colors.accent,
+        marginRight: 12,
+    },
+    connectionText: {
+        fontSize: 16,
+        color: theme.colors.text.primary,
+        fontWeight: '500',
+    },
+});
+
 export default function ConnectionStatus({ status }: ConnectionStatusProps) {
     const pulseAnim = useRef(new Animated.Value(1)).current;
+    const { theme } = useTheme();
+    const styles = getStyles(theme);
 
     useEffect(() => {
         if (status === 'searching') {
@@ -35,33 +63,33 @@ export default function ConnectionStatus({ status }: ConnectionStatusProps) {
         switch (status) {
             case 'searching':
                 return {
-                    color: '#007AFF',
+                    color: theme.colors.status.info.text,
                     text: 'Waiting for connection...',
-                    backgroundColor: '#f0f8ff',
+                    backgroundColor: theme.colors.status.info.background,
                 };
             case 'connecting':
                 return {
-                    color: '#FF9500',
+                    color: theme.colors.status.pending.text,
                     text: 'Connecting...',
-                    backgroundColor: '#fff8f0',
+                    backgroundColor: theme.colors.status.pending.background,
                 };
             case 'connected':
                 return {
-                    color: '#34C759',
+                    color: theme.colors.status.active.text,
                     text: 'Connected!',
-                    backgroundColor: '#f0fff4',
+                    backgroundColor: theme.colors.status.active.background,
                 };
             case 'error':
                 return {
-                    color: '#FF3B30',
+                    color: theme.colors.status.error.text,
                     text: 'Connection error',
-                    backgroundColor: '#fff0f0',
+                    backgroundColor: theme.colors.status.error.background,
                 };
             default:
                 return {
-                    color: '#8E8E93',
+                    color: theme.colors.status.neutral.text,
                     text: 'Idle',
-                    backgroundColor: '#f8f8f8',
+                    backgroundColor: theme.colors.status.neutral.background,
                 };
         }
     };
@@ -83,27 +111,3 @@ export default function ConnectionStatus({ status }: ConnectionStatusProps) {
         </View>
     );
 }
-
-const styles = StyleSheet.create({
-    connectionStatus: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 24,
-        paddingVertical: 16,
-        backgroundColor: '#f8f8f8',
-        borderRadius: 12,
-    },
-    pulsingDot: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
-        backgroundColor: '#007AFF',
-        marginRight: 12,
-    },
-    connectionText: {
-        fontSize: 16,
-        color: '#333',
-        fontWeight: '500',
-    },
-});

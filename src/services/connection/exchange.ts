@@ -2,7 +2,7 @@ import {keccak256, stringToBytes} from "viem";
 import {getMask, getMaskFields, getProfile, getProfileFields} from "../storage";
 import { PayloadV1, ExchangeV1 } from "@/types/exchange";
 
-const generatePayload = async (maskId: string): Promise<PayloadV1> => {
+const generatePayload = async (maskId: number): Promise<PayloadV1> => {
     // Get mask by ID
     const mask = await getMask(maskId);
     if (!mask) {
@@ -53,7 +53,7 @@ const generateExchangeId = (signature: string, issuer: string, timestamp: number
 }
 
 const generateConnectionProtocol = async (
-    maskId: string,
+    maskId: number,
     issuer: string,
     signMessage: (message: string) => Promise<string>
 ): Promise<ExchangeV1> => {

@@ -3,16 +3,56 @@ import { StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { updateProfileAvatar, getProfile } from '@/services/storage';
 import {getProfileId} from "@/services/wallet";
-
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme/themes/base';
 
 
 const updateProfileImage = async (profile_id: string ,imageUri: string) => {
   await updateProfileAvatar(profile_id, imageUri);
 };
 
+const getStyles = (theme: Theme) => StyleSheet.create({
+  container: {
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  imageTouchable: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+  },
+  profileImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+  },
+  imagePlaceholder: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: theme.colors.surfaceAlt,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: theme.colors.borderAlt,
+    borderStyle: 'dashed',
+  },
+  imagePlaceholderText: {
+    fontSize: 40,
+    color: theme.colors.text.tertiary,
+  },
+  imagePlaceholderSubtext: {
+    fontSize: 12,
+    color: theme.colors.text.tertiary,
+    marginTop: 4,
+  },
+});
+
 export default function ProfileImage() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [profileID, setProfileID] = useState<string | null>(null);
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
 
   // Load profile ID on mount
   useEffect(() => {
@@ -95,40 +135,3 @@ export default function ProfileImage() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-  imageTouchable: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-  },
-  profileImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-  },
-  imagePlaceholder: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#e0e0e0',
-    borderStyle: 'dashed',
-  },
-  imagePlaceholderText: {
-    fontSize: 40,
-    color: '#999',
-  },
-  imagePlaceholderSubtext: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 4,
-  },
-});

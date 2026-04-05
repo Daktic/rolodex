@@ -10,6 +10,8 @@ import {
   ContextMenuSelection,
 } from '@/services/contextMenu';
 import { convertStringToIcon } from '@/utils/icons';
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme/themes/base';
 
 interface ContextMenuProps {
   visible: boolean;
@@ -18,12 +20,58 @@ interface ContextMenuProps {
   onSelect: (selection: ContextMenuSelection) => void;
 }
 
+const getStyles = (theme: Theme) => StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: theme.colors.overlay,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  menu: {
+    width: '100%',
+    maxWidth: 320,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.borderAlt,
+    overflow: 'hidden',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.surfaceAlt,
+  },
+  actionIcon: {
+    width: 22,
+    alignItems: 'center',
+  },
+  actionLabel: {
+    fontSize: 15,
+    color: theme.colors.text.primary,
+    fontWeight: '500',
+  },
+  destructiveLabel: {
+    color: theme.colors.danger,
+  },
+  disabledLabel: {
+    color: theme.colors.text.disabled,
+  },
+});
+
 export default function ContextMenu({
   visible,
   actions,
   onClose,
   onSelect,
 }: ContextMenuProps) {
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
+
   return (
     <Modal
       visible={visible}
@@ -50,7 +98,7 @@ export default function ContextMenu({
               disabled={action.disabled}
             >
               <View style={styles.actionIcon}>
-                {convertStringToIcon(action.iconName, 18, '#444')}
+                {convertStringToIcon(action.iconName, 18, theme.colors.text.primary)}
               </View>
               <Text
                 style={[
@@ -68,46 +116,3 @@ export default function ContextMenu({
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  menu: {
-    width: '100%',
-    maxWidth: 320,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e5e5e5',
-    overflow: 'hidden',
-  },
-  actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f1f1',
-  },
-  actionIcon: {
-    width: 22,
-    alignItems: 'center',
-  },
-  actionLabel: {
-    fontSize: 15,
-    color: '#222',
-    fontWeight: '500',
-  },
-  destructiveLabel: {
-    color: '#d42f2f',
-  },
-  disabledLabel: {
-    color: '#aaa',
-  },
-});

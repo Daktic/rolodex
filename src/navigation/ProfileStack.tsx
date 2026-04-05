@@ -1,6 +1,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import ProfileScreen from '../screens/ProfileScreen';
 import ShareScreen from '../screens/ShareScreen';
+import { useTheme } from '@/hooks/useTheme';
 
 export type ProfileStackParamList = {
   Profile: undefined;
@@ -10,8 +11,13 @@ export type ProfileStackParamList = {
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
 
 export default function ProfileStack() {
+  const { theme } = useTheme();
   return (
-    <Stack.Navigator>
+    <Stack.Navigator screenOptions={{
+      headerStyle: { backgroundColor: theme.colors.surface },
+      headerTintColor: theme.colors.accent,
+      headerTitleStyle: { color: theme.colors.text.primary },
+    }}>
       <Stack.Screen
         name="Profile"
         component={ProfileScreen}

@@ -8,6 +8,8 @@ import {
   ContextMenuSelection,
   KVBContextMenuActionId,
 } from '@/services/contextMenu';
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme/themes/base';
 
 export interface KeyValuePair {
   id: number;
@@ -35,6 +37,26 @@ interface KVBContainerProps {
   }) => void;
 }
 
+const getStyles = (theme: Theme) => StyleSheet.create({
+  container: {
+    width: '100%',
+  },
+  addButton: {
+    borderWidth: 1,
+    borderColor: theme.colors.borderAlt,
+    borderRadius: 8,
+    borderStyle: 'dashed',
+    padding: 16,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  addButtonText: {
+    fontSize: 14,
+    color: theme.colors.text.secondary,
+    fontWeight: '600',
+  },
+});
+
 export default function KVBContainer({
   items,
   onUpdate,
@@ -54,6 +76,9 @@ export default function KVBContainer({
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuItem, setMenuItem] = useState<KeyValuePair | null>(null);
   const [menuActions, setMenuActions] = useState<ContextMenuActionDescriptor[]>([]);
+
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
 
   const handleLongPress = (item: KeyValuePair) => {
     const actions = getContextActions?.(item) ?? [];
@@ -152,23 +177,3 @@ export default function KVBContainer({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-  },
-  addButton: {
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    borderStyle: 'dashed',
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  addButtonText: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '600',
-  },
-});

@@ -4,6 +4,7 @@ import AboutScreen from '../screens/settings/AboutScreen';
 import WalletScreen from "@/screens/settings/WalletScreen";
 import NotificationScreen from "@/screens/settings/NotificationsScreen";
 import AppearanceScreen from "@/screens/settings/AppearanceScreen";
+import { useTheme } from '@/hooks/useTheme';
 
 export type SettingsStackParamList = {
     SettingsList: undefined;
@@ -16,8 +17,13 @@ export type SettingsStackParamList = {
 const Stack = createNativeStackNavigator<SettingsStackParamList>();
 
 export default function SettingsStack() {
+    const { theme } = useTheme();
     return (
-        <Stack.Navigator>
+        <Stack.Navigator screenOptions={{
+            headerStyle: { backgroundColor: theme.colors.surface },
+            headerTintColor: theme.colors.accent,
+            headerTitleStyle: { color: theme.colors.text.primary },
+        }}>
             <Stack.Screen
                 name="SettingsList"
                 component={SettingsListScreen}

@@ -8,12 +8,41 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ConnectionsStackParamList } from '@/navigation/ConnectionsStack';
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme/themes/base';
 
 
 interface QRScannerProps {
     onClose: () => void;
     setShowCamera: (show: boolean) => void;
 }
+
+const getStyles = (theme: Theme) => StyleSheet.create({
+    overlay: {
+        flex: 1,
+        backgroundColor: theme.colors.overlay,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    dialog: {
+        backgroundColor: theme.colors.surface,
+        borderRadius: 16,
+        padding: 24,
+        width: 300,
+        position: 'relative',
+    },
+    qrContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 250,
+        height: 250,
+    },
+    camera: {
+        width: 250,
+        height: 250,
+    },
+});
+
 const QRScanner = ({onClose, setShowCamera}: QRScannerProps) => {
     const isQRProcessing = useRef(false);
     const [permission, requestPermission] = useCameraPermissions();
@@ -25,6 +54,8 @@ const QRScanner = ({onClose, setShowCamera}: QRScannerProps) => {
     }, []);
 
     const navigation = useNavigation<NativeStackNavigationProp<ConnectionsStackParamList>>();
+    const { theme } = useTheme();
+    const styles = getStyles(theme);
 
     const handleQRScanned = async ({ data }: { data: string }) => {
         if (isQRProcessing.current) return;  // gate
@@ -60,7 +91,7 @@ export {QRScanner};
 interface QRDialogProps {
     visible: boolean;
     onClose: () => void;
-    maskId: string;
+    maskId: number;
     issuer: string;
     signMessage: (message: string) => Promise<string>;
     initialMode?: 'qr' | 'camera';
@@ -69,6 +100,9 @@ interface QRDialogProps {
 export default function QRDialog({ visible, onClose, maskId, issuer, signMessage, initialMode = 'qr' }: QRDialogProps) {
     const [qrData, setQrData] = useState<string>('');
     const [mode, setMode] = useState<'qr' | 'camera'>(initialMode);
+
+    const { theme } = useTheme();
+    const styles = getStyles(theme);
 
     useEffect(() => {
         if (visible && maskId) {
@@ -116,29 +150,3 @@ export default function QRDialog({ visible, onClose, maskId, issuer, signMessage
         </Modal>
     );
 }
-
-const styles = StyleSheet.create({
-    overlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    dialog: {
-        backgroundColor: '#fff',
-        borderRadius: 16,
-        padding: 24,
-        width: 300,
-        position: 'relative',
-    },
-    qrContainer: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: 250,
-        height: 250,
-    },
-    camera: {
-        width: 250,
-        height: 250,
-    },
-});
