@@ -115,7 +115,7 @@ const getStyles = (theme: Theme) => StyleSheet.create({
 
 export default function ShareScreen() {
     const route = useRoute();
-    const { maskId } = route.params as { maskId: string };
+    const { maskId } = route.params as { maskId: number };
     const [payload, setPayload] = useState<PayloadV1 | null>(null);
     const [qrDialogVisible, setQrDialogVisible] = useState(false);
     const [qrInitialMode, setQrInitialMode] = useState<'qr' | 'camera'>('qr');

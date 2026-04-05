@@ -91,7 +91,7 @@ export {QRScanner};
 interface QRDialogProps {
     visible: boolean;
     onClose: () => void;
-    maskId: string;
+    maskId: number;
     issuer: string;
     signMessage: (message: string) => Promise<string>;
     initialMode?: 'qr' | 'camera';

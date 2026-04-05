@@ -1,5 +1,5 @@
 import { StyleSheet, View, Text, Image } from 'react-native';
-import { Connection, ConnectionField } from '@/types/storage';
+import { Connection, ConnectionField } from '@/types/db';
 import { useTheme } from '@/hooks/useTheme';
 import type { Theme } from '@/theme/themes/base';
 
