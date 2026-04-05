@@ -1,6 +1,6 @@
 {
   "name": "dexio",
-  "version": "1.0.01",
+  "version": "1.0.1",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
