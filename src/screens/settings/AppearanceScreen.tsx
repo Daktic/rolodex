@@ -1,14 +1,14 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import {StyleSheet, Text, TouchableOpacity} from 'react-native';
 import SettingsScreen from './SettingsScreen';
 import SettingsSection from '@/components/screens/settingsDetail/SettingsSection';
-import { useTheme } from '@/hooks/useTheme';
-import type { ThemeOption } from '@/theme/themes';
+import {useTheme} from '@/hooks/useTheme';
+import {ThemeOption} from "@/types/settings";
 
 const THEME_OPTIONS: { label: string; value: ThemeOption }[] = [
-    { label: 'System', value: 'system' },
-    { label: 'Light', value: 'light' },
-    { label: 'Dark', value: 'dark' },
-    { label: 'High Contrast', value: 'highContrast' },
+    { label: 'System', value: ThemeOption.SYSTEM },
+    { label: 'Light', value: ThemeOption.LIGHT },
+    { label: 'Dark', value: ThemeOption.DARK },
+    { label: 'High Contrast', value: ThemeOption.HIGH_CONTRAST},
 ];
 
 const AppearanceScreen = () => {

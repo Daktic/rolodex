@@ -3,8 +3,8 @@ import { light } from './themes/light';
 import { dark } from './themes/dark';
 import { highContrast } from './themes/highContrast';
 import type { ColorSchemeName } from 'react-native';
+import {ThemeOption} from "@/types/settings";
 
-export type ThemeOption = 'system' | 'light' | 'dark' | 'highContrast';
 
 function mergeTheme(override: ThemeOverride): Theme {
     const oc = override.colors ?? {};
