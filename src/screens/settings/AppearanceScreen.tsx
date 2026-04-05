@@ -8,6 +8,7 @@ const THEME_OPTIONS: { label: string; value: ThemeOption }[] = [
     { label: 'System', value: 'system' },
     { label: 'Light', value: 'light' },
     { label: 'Dark', value: 'dark' },
+    { label: 'High Contrast', value: 'highContrast' },
 ];
 
 const AppearanceScreen = () => {

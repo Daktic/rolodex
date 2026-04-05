@@ -114,7 +114,7 @@ export default ConnectionsListScreen;
 const getStyles = (theme: Theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.surfaceAlt,
+    backgroundColor: theme.colors.background,
   },
   header: {
     paddingTop: 60,

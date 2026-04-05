@@ -1,9 +1,10 @@
 import { base, type Theme, type ThemeOverride } from './themes/base';
 import { light } from './themes/light';
 import { dark } from './themes/dark';
+import { highContrast } from './themes/highContrast';
 import type { ColorSchemeName } from 'react-native';
 
-export type ThemeOption = 'system' | 'light' | 'dark';
+export type ThemeOption = 'system' | 'light' | 'dark' | 'highContrast';
 
 function mergeTheme(override: ThemeOverride): Theme {
     const oc = override.colors ?? {};
@@ -29,5 +30,6 @@ function mergeTheme(override: ThemeOverride): Theme {
 export function resolveTheme(selected: ThemeOption, systemScheme?: ColorSchemeName): Theme {
     if (selected === 'light') return mergeTheme(light);
     if (selected === 'dark') return mergeTheme(dark);
+    if (selected === 'highContrast') return mergeTheme(highContrast);
     return systemScheme === 'dark' ? mergeTheme(dark) : mergeTheme(light);
 }

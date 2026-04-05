@@ -1,32 +1,32 @@
 import type { ThemeOverride } from './base';
 
-export const dark: ThemeOverride = {
+export const highContrast: ThemeOverride = {
     colors: {
-        background: '#1C1C1E',
-        surface: '#2C2C2E',
-        surfaceAlt: '#3A3A3C',
+        background: '#000000',
+        surface: '#1C1C1E',
+        surfaceAlt: 'rgb(39 39 39 / 0.7)',
         text: {
-            primary: '#FFFDF0',
-            secondary: '#8E8E93',
-            tertiary: '#88888c',
-            disabled: '#48484A',
+            primary: '#FFFFFF',
+            secondary: '#FFFFFF',
+            tertiary: '#FFFFFF',
+            disabled: '#FFFFFF',
             inverse: '#000000',
         },
-        iconColor: '#FFFDF0',
-        border: '#38383A',
-        borderAlt: '#48484A',
-        accent: '#0A84FF',
+        iconColor: '#FFFFFF',
+        border: '#FFFF00',
+        borderAlt: '#FFFFFF',
+        accent: '#FFFF00',
         danger: '#FF453A',
         warning: '#FF9F0A',
         success: '#32D74B',
         highlight: '#DAA520',
-        overlay: 'rgb(117 117 117 / 0.95)',
+        overlay: 'rgb(255 255 255 / 0.9)',
         shadow: '#000000',
         placeholder: '#636366',
         tabBar: {
             background: '#1C1C1E',
-            active: '#0A84FF',
-            inactive: '#636366',
+            active: '#FFFF00',
+            inactive: '#8E8E93',
             border: '#38383A',
         },
         status: {
