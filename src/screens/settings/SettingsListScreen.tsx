@@ -4,9 +4,13 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { SettingsStackParamList } from '@/navigation/SettingsStack';
 import SettingsListSection from '@/components/screens/settingsList/SettingsListSection';
 import {SettingsItem} from "@/types/settings";
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme/themes/base';
 
 export default function SettingsListScreen() {
     const navigation = useNavigation<NativeStackNavigationProp<SettingsStackParamList>>();
+    const { theme } = useTheme();
+    const styles = getStyles(theme);
 
     const appSettings: SettingsItem[] = [
         {
@@ -59,16 +63,16 @@ export default function SettingsListScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: theme.colors.background,
     },
     header: {
         paddingTop: 60,
         paddingHorizontal: 20,
         paddingBottom: 20,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: theme.colors.background,
     },
     title: {
         fontSize: 32,

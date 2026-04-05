@@ -3,6 +3,8 @@ import { StyleSheet, View, Pressable, Text, Alert, Animated } from 'react-native
 import { Swipeable } from 'react-native-gesture-handler';
 import { Connection, ConnectionField } from '@/types/db';
 import ConnectionContact from './ConnectionContact';
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme/themes/base';
 
 interface ConnectionContainerProps {
   connection: Connection;
@@ -20,6 +22,8 @@ const ConnectionContainer = ({
   onShare,
 }: ConnectionContainerProps) => {
   const swipeableRef = useRef<Swipeable>(null);
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
 
   const handleDelete = () => {
     Alert.alert(
@@ -109,25 +113,25 @@ const ConnectionContainer = ({
 
 export default ConnectionContainer;
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: theme.colors.borderAlt,
   },
   shareContainer: {
     justifyContent: 'center',
     alignItems: 'flex-start',
   },
   shareButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.colors.accent,
     justifyContent: 'center',
     alignItems: 'center',
     width: 80,
     height: '100%',
   },
   shareText: {
-    color: '#fff',
+    color: theme.colors.text.inverse,
     fontWeight: '600',
     fontSize: 14,
   },
@@ -136,14 +140,14 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   deleteButton: {
-    backgroundColor: '#ff3b30',
+    backgroundColor: theme.colors.danger,
     justifyContent: 'center',
     alignItems: 'center',
     width: 80,
     height: '100%',
   },
   deleteText: {
-    color: '#fff',
+    color: theme.colors.text.inverse,
     fontWeight: '600',
     fontSize: 14,
   },

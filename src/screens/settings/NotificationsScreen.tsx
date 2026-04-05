@@ -1,8 +1,13 @@
 import { Text, StyleSheet } from "react-native";
 import SettingsScreen from "./SettingsScreen";
 import SettingsSection from "@/components/screens/settingsDetail/SettingsSection";
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme/themes/base';
 
 const NotificationScreen = () => {
+    const { theme } = useTheme();
+    const styles = getStyles(theme);
+
     return (
         <SettingsScreen title="">
             <SettingsSection title="Coming Soon">
@@ -14,10 +19,10 @@ const NotificationScreen = () => {
 
 export default NotificationScreen;
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
     text: {
         fontSize: 16,
         padding: 16,
-        color: '#000',
+        color: theme.colors.text.primary,
     },
 });

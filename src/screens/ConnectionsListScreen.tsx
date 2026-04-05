@@ -7,6 +7,8 @@ import { Connection, ConnectionField } from '@/types/db';
 import { getAllConnections, getConnectionFields, deleteConnection } from '@/services/storage';
 import ConnectionContainer from '@/components/screens/connectionList/ConnectionContainer';
 import ConnectionListHeader from "@/components/screens/connectionList/ConnectionListHeader";
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme/themes/base';
 
 
 interface ConnectionWithFields {
@@ -18,6 +20,8 @@ const ConnectionsListScreen = () => {
   const [connections, setConnections] = useState<ConnectionWithFields[]>([]);
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation<NativeStackNavigationProp<ConnectionsStackParamList>>();
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
 
   const loadConnections = async () => {
     try {
@@ -107,16 +111,16 @@ const ConnectionsListScreen = () => {
 
 export default ConnectionsListScreen;
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.surfaceAlt,
   },
   header: {
     paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 20,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.surfaceAlt,
   },
   listContent: {
     paddingBottom: 20,
@@ -130,12 +134,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#666',
+    color: theme.colors.text.secondary,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#999',
+    color: theme.colors.text.tertiary,
     textAlign: 'center',
   },
 });

@@ -1,20 +1,26 @@
-import { base, type Theme } from './themes/base';
+import { base, type Theme, type ThemeOverride } from './themes/base';
 import { light } from './themes/light';
 import { dark } from './themes/dark';
 import type { ColorSchemeName } from 'react-native';
 
 export type ThemeOption = 'system' | 'light' | 'dark';
 
-function mergeTheme(override: Partial<Theme>): Theme {
+function mergeTheme(override: ThemeOverride): Theme {
+    const oc = override.colors ?? {};
     return {
         ...base,
         ...override,
         colors: {
             ...base.colors,
-            ...(override.colors ?? {}),
-            text: {
-                ...base.colors.text,
-                ...(override.colors?.text ?? {}),
+            ...oc,
+            text: { ...base.colors.text, ...(oc.text ?? {}) },
+            tabBar: { ...base.colors.tabBar, ...(oc.tabBar ?? {}) },
+            status: {
+                info: { ...base.colors.status.info, ...(oc.status?.info ?? {}) },
+                pending: { ...base.colors.status.pending, ...(oc.status?.pending ?? {}) },
+                active: { ...base.colors.status.active, ...(oc.status?.active ?? {}) },
+                error: { ...base.colors.status.error, ...(oc.status?.error ?? {}) },
+                neutral: { ...base.colors.status.neutral, ...(oc.status?.neutral ?? {}) },
             },
         },
     };
@@ -23,6 +29,5 @@ function mergeTheme(override: Partial<Theme>): Theme {
 export function resolveTheme(selected: ThemeOption, systemScheme?: ColorSchemeName): Theme {
     if (selected === 'light') return mergeTheme(light);
     if (selected === 'dark') return mergeTheme(dark);
-    // system: follow device preference, default to light
     return systemScheme === 'dark' ? mergeTheme(dark) : mergeTheme(light);
 }

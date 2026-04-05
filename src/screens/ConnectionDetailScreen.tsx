@@ -6,6 +6,8 @@ import { getConnection } from '@/services/storage';
 import { Connection } from '@/types/db';
 import Attributions from '@/components/screens/connectionDetail/Attributions';
 import Loading from '@/components/common/Loading';
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme/themes/base';
 
 type ConnectionDetailRouteProp = RouteProp<ConnectionsStackParamList, 'ConnectionDetail'>;
 
@@ -14,6 +16,8 @@ export default function ConnectionDetailScreen() {
   const { connectionId } = route.params;
   const [connection, setConnection] = useState<Connection | null>(null);
   const [loading, setLoading] = useState(true);
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
 
   useEffect(() => {
     const loadConnection = async () => {
@@ -68,10 +72,10 @@ export default function ConnectionDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
   },
   contentContainer: {
     paddingBottom: 100,
@@ -89,16 +93,16 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: theme.colors.surfaceAlt,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#e0e0e0',
+    borderColor: theme.colors.borderAlt,
   },
   imagePlaceholderText: {
     fontSize: 48,
     fontWeight: '600',
-    color: '#666',
+    color: theme.colors.text.secondary,
   },
   nameContainer: {
     paddingHorizontal: 20,
@@ -108,16 +112,16 @@ const styles = StyleSheet.create({
   displayName: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#333',
+    color: theme.colors.text.primary,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
   },
   errorText: {
     fontSize: 18,
-    color: '#666',
+    color: theme.colors.text.secondary,
   },
 });

@@ -1,4 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme/themes/base';
 
 interface SettingsRowProps {
     title: string;
@@ -7,6 +9,9 @@ interface SettingsRowProps {
 }
 
 export default function SettingsRow({ title, onPress, showDivider = true }: SettingsRowProps) {
+    const { theme } = useTheme();
+    const styles = getStyles(theme);
+
     return (
         <View>
             <TouchableOpacity style={styles.row} onPress={onPress}>
@@ -18,27 +23,27 @@ export default function SettingsRow({ title, onPress, showDivider = true }: Sett
     );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
     row: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingVertical: 16,
         paddingHorizontal: 20,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: theme.colors.surface,
     },
     title: {
         fontSize: 16,
-        color: '#000000',
+        color: theme.colors.text.primary,
     },
     chevron: {
         fontSize: 24,
-        color: '#C7C7CC',
+        color: theme.colors.text.tertiary,
         fontWeight: '300',
     },
     divider: {
         height: StyleSheet.hairlineWidth,
-        backgroundColor: '#C6C6C8',
+        backgroundColor: theme.colors.border,
         marginLeft: 20,
     },
 });

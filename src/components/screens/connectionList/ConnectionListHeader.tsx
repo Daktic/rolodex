@@ -3,10 +3,14 @@ import {Modal, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {UserPlus} from "lucide-react-native";
 import {QRScanner} from "@/dialogs/QR";
 import {useState} from "react";
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme/themes/base';
 
 
 export const ConnectionListHeader = () => {
     const [showCamera, setShowCamera] = useState(false);
+    const { theme } = useTheme();
+    const styles = getStyles(theme);
 
 
     const handleConnectPress = () => {
@@ -50,7 +54,7 @@ export const ConnectionListHeader = () => {
 
 export default ConnectionListHeader;
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -69,12 +73,12 @@ const styles = StyleSheet.create({
     },
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backgroundColor: theme.colors.overlay,
         justifyContent: 'center',
         alignItems: 'center',
     },
     dialog: {
-        backgroundColor: '#fff',
+        backgroundColor: theme.colors.surface,
         borderRadius: 16,
         padding: 24,
         width: 300,
@@ -84,7 +88,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         padding: 20,
-        backgroundColor: 'white',
+        backgroundColor: theme.colors.surface,
         borderRadius: 16,
     },
 });

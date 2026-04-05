@@ -1,5 +1,7 @@
 import { StyleSheet, View, Text, Image } from 'react-native';
 import { Connection, ConnectionField } from '@/types/storage';
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme/themes/base';
 
 interface ConnectionContactProps {
   connection: Connection;
@@ -7,6 +9,9 @@ interface ConnectionContactProps {
 }
 
 export default function ConnectionContact({ connection, fields }: ConnectionContactProps) {
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
+
   return (
     <View style={styles.container}>
       {/* Avatar Circle */}
@@ -44,12 +49,12 @@ export default function ConnectionContact({ connection, fields }: ConnectionCont
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
   },
   avatarContainer: {
     marginRight: 12,
@@ -63,14 +68,14 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: theme.colors.borderAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarPlaceholderText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#666',
+    color: theme.colors.text.secondary,
   },
   infoContainer: {
     flex: 1,
@@ -78,7 +83,7 @@ const styles = StyleSheet.create({
   displayName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: theme.colors.text.primary,
     marginBottom: 4,
   },
   iconList: {
@@ -89,7 +94,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: theme.colors.surfaceAlt,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 6,
@@ -97,11 +102,11 @@ const styles = StyleSheet.create({
   iconText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#666',
+    color: theme.colors.text.secondary,
   },
   ellipsis: {
     fontSize: 12,
-    color: '#999',
+    color: theme.colors.text.tertiary,
     marginLeft: 2,
   },
 });

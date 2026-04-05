@@ -5,8 +5,61 @@ import {useEffect, useState} from "react";
 import {getProfileId} from "@/services/wallet";
 import * as Clipboard from 'expo-clipboard';
 import * as SecureStore from 'expo-secure-store';
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme/themes/base';
+
+const getStyles = (theme: Theme) => StyleSheet.create({
+    text: {
+        fontSize: 16,
+        padding: 16,
+        color: theme.colors.text.primary,
+    },
+    button: {
+        padding: 16,
+        backgroundColor: theme.colors.danger,
+        borderRadius: 8,
+    },
+    overlay: {
+        flex: 1,
+        backgroundColor: theme.colors.overlay,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    card: {
+        backgroundColor: theme.colors.surface,
+        borderRadius: 12,
+        padding: 24,
+        width: '85%',
+        gap: 16,
+    },
+    warning: {
+        color: theme.colors.danger,
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    key: {
+        fontFamily: 'monospace',
+        fontSize: 13,
+        backgroundColor: theme.colors.surfaceAlt,
+        padding: 12,
+        borderRadius: 8,
+        color: theme.colors.text.secondary,
+    },
+    copyButton: {
+        backgroundColor: theme.colors.danger,
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    closeButton: {
+        alignItems: 'center',
+        padding: 8,
+    },
+});
 
 const PrivateKeyContent = ({visible, setModalVisible}: {visible: boolean, setModalVisible: (visible: boolean) => void}) => {
+    const { theme } = useTheme();
+    const styles = getStyles(theme);
 
     const [privateKey, setPrivateKey] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
@@ -52,6 +105,9 @@ const PrivateKeyContent = ({visible, setModalVisible}: {visible: boolean, setMod
 }
 
 const WalletScreen = () => {
+    const { theme } = useTheme();
+    const styles = getStyles(theme);
+
     const [publicKey, setPublicKey] = useState<string | null>(null);
     const [showPrivateKeyDialog, setShowPrivateKeyDialog] = useState<boolean>(false);
 
@@ -92,52 +148,3 @@ const WalletScreen = () => {
 };
 
 export default WalletScreen;
-
-const styles = StyleSheet.create({
-    text: {
-        fontSize: 16,
-        padding: 16,
-        color: '#000',
-    },
-    button: {
-        padding: 16,
-        backgroundColor: '#ef3a3a',
-        borderRadius: 8,
-    },
-    overlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.6)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    card: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 24,
-        width: '85%',
-        gap: 16,
-    },
-    warning: {
-        color: '#ef3a3a',
-        fontWeight: 'bold',
-        fontSize: 14,
-    },
-    key: {
-        fontFamily: 'monospace',
-        fontSize: 13,
-        backgroundColor: '#f4f4f4',
-        padding: 12,
-        borderRadius: 8,
-        color: '#333',
-    },
-    copyButton: {
-        backgroundColor: '#ef3a3a',
-        padding: 12,
-        borderRadius: 8,
-        alignItems: 'center',
-    },
-    closeButton: {
-        alignItems: 'center',
-        padding: 8,
-    },
-});
