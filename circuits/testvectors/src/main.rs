@@ -56,10 +56,17 @@ fn poseidon2_hash(inputs: &[FieldElement]) -> FieldElement {
 }
 
 fn domain_hash(label: &str) -> HexField {
-    // One field element per UTF-8 byte — simplest workable encoding for now.
+    // Pack UTF-8 bytes big-endian, 31 bytes per field element (§4.1, §6.1).
+    const CHUNK_BYTES: usize = 31;
     let inputs: Vec<FieldElement> = label
-        .bytes()
-        .map(|b| FieldElement::try_from(b as u128).unwrap())
+        .as_bytes()
+        .chunks(CHUNK_BYTES)
+        .map(|chunk| {
+            // Right-align chunk in a 32-byte buffer so it reads as a big-endian integer.
+            let mut buf = [0u8; 32];
+            buf[32 - chunk.len()..].copy_from_slice(chunk);
+            FieldElement::from_be_bytes_reduce(&buf)
+        })
         .collect();
     let hash = poseidon2_hash(&inputs);
     HexField(hash.to_be_bytes().try_into().expect("field element must be 32 bytes"))
@@ -69,22 +76,26 @@ fn compute_domain_constants() -> DomainConstants {
     let domain_leaf  = domain_hash("dexio.v1.leaf");
     let domain_node  = domain_hash("dexio.v1.node");
     let domain_value = domain_hash("dexio.v1.value");
-
-    // ZERO_LEAF is the hash of a single zero field element — the canonical empty leaf.
-    let zero_leaf = HexField(
-        poseidon2_hash(&[FieldElement::zero()]).to_be_bytes().try_into().expect("field element must be 32 bytes"),
-    );
+    let zero_leaf    = domain_hash("dexio.v1.zero_leaf");
 
     DomainConstants { domain_leaf, domain_node, domain_value, zero_leaf }
 }
 
 fn main() {
+    // Get the current git commit hash at runtime
+    let git_shaw = String::from_utf8(
+        std::process::Command::new("git")
+            .args(["rev-parse", "HEAD"])
+            .output()
+            .unwrap()
+            .stdout
+    ).unwrap().trim().to_string();
 
 
     let vectors = TestVectors {
         version: "dexio.v1".to_string(),
         generated_at: chrono::Utc::now().to_rfc3339(),
-        generator_commit: String::from("7df89c581e495c52c11f9acd7210b2be86e6ab51"),
+        generator_commit: git_shaw,
         vectors: Vectors {
             domain_constants: compute_domain_constants(),
         },
