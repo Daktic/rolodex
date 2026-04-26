@@ -19,7 +19,25 @@ struct TestVectors {
 struct Vectors {
     domain_constants: DomainConstants,
     empty_subtree_constants: EmptySubtreeConstants,
+    field_name_encoding: Vec<FieldNameEncodingVector>,
     value_encoding: Vec<ValueEncodingVector>,
+}
+
+#[derive(Serialize)]
+struct FieldNameEncodingVector {
+    name: String,
+    inputs: FieldNameEncodingInputs,
+    outputs: FieldNameEncodingOutputs,
+}
+
+#[derive(Serialize)]
+struct FieldNameEncodingInputs {
+    field_name: String,
+}
+
+#[derive(Serialize)]
+struct FieldNameEncodingOutputs {
+    field_name_fe: HexField,
 }
 
 #[derive(Serialize)]
@@ -106,17 +124,22 @@ fn field_to_be_bytes(f: FieldElement) -> [u8; 32] {
     f.to_be_bytes().try_into().expect("field element must be 32 bytes")
 }
 
+// Right-align `chunk` (≤32 bytes) in a 32-byte buffer and interpret as a big-endian integer.
+// Shared primitive used by domain_label_fe, field_name_to_fe, and pack_big_endian.
+fn pack_chunk_to_fe(chunk: &[u8]) -> FieldElement {
+    assert!(chunk.len() <= 32);
+    let mut buf = [0u8; 32];
+    buf[32 - chunk.len()..].copy_from_slice(chunk);
+    FieldElement::from_be_bytes_reduce(&buf)
+}
+
 // Compute poseidon2_hash of a domain label string packed big-endian (§4.1, §6.1).
 // Single source of truth — call this wherever a domain FieldElement is needed.
 fn domain_label_fe(label: &str) -> FieldElement {
     let inputs: Vec<FieldElement> = label
         .as_bytes()
         .chunks(CHUNK_BYTES)
-        .map(|chunk| {
-            let mut buf = [0u8; 32];
-            buf[32 - chunk.len()..].copy_from_slice(chunk);
-            FieldElement::from_be_bytes_reduce(&buf)
-        })
+        .map(pack_chunk_to_fe)
         .collect();
     poseidon2_hash(&inputs)
 }
@@ -168,6 +191,23 @@ fn compute_domain_constants() -> DomainConstants {
     DomainConstants { domain_leaf, domain_node, domain_value, zero_leaf }
 }
 
+// §6.1: pack_big_endian(utf8(field_name), CHUNK_BYTES)[0]
+// Field names are ≤31 bytes (§4.1), so they always fit in a single field element.
+pub fn field_name_to_fe(field_name: &str) -> FieldElement {
+    assert!(field_name.len() <= CHUNK_BYTES, "field name exceeds {CHUNK_BYTES} bytes");
+    pack_chunk_to_fe(field_name.as_bytes())
+}
+
+fn compute_field_name_encoding(name: &str, field_name: &str) -> FieldNameEncodingVector {
+    FieldNameEncodingVector {
+        name: name.to_string(),
+        inputs: FieldNameEncodingInputs { field_name: field_name.to_string() },
+        outputs: FieldNameEncodingOutputs {
+            field_name_fe: HexField(field_to_be_bytes(field_name_to_fe(field_name))),
+        },
+    }
+}
+
 fn canonicalize_value(s: &str) -> Vec<u8> {
     s.nfc().collect::<String>().into_bytes()
 }
@@ -176,12 +216,7 @@ fn canonicalize_value(s: &str) -> Vec<u8> {
 // Each 31-byte chunk is right-aligned in a 32-byte buffer and read as a big-endian integer.
 fn pack_big_endian(bytes: &[u8]) -> Vec<FieldElement> {
     assert_eq!(bytes.len(), MAX_VALUE_BYTES, "input must be exactly {MAX_VALUE_BYTES} bytes");
-    let mut out = Vec::with_capacity(VALUE_CHUNKS);
-    for chunk in bytes.chunks(CHUNK_BYTES) {
-        let mut buf = [0u8; 32];
-        buf[32 - chunk.len()..].copy_from_slice(chunk);
-        out.push(FieldElement::from_be_bytes_reduce(&buf));
-    }
+    let out: Vec<FieldElement> = bytes.chunks(CHUNK_BYTES).map(pack_chunk_to_fe).collect();
     assert_eq!(out.len(), VALUE_CHUNKS);
     out
 }
@@ -240,6 +275,10 @@ fn main() {
         vectors: Vectors {
             domain_constants: compute_domain_constants(),
             empty_subtree_constants: compute_empty_subtree_constants(),
+            field_name_encoding: vec![
+                compute_field_name_encoding("short", "email"),
+                compute_field_name_encoding("boundary_31", "a_31_byte_field_name_exactly_xx"),
+            ],
             value_encoding: vec![
                 compute_value_encoding("short_ascii", "hello"),
                 compute_value_encoding("single_byte", "a"),
