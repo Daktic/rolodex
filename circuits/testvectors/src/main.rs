@@ -764,5 +764,8 @@ fn main() {
     };
 
     let json = serde_json::to_string_pretty(&vectors).unwrap();
-    println!("{}", json);
+
+    let out_path = std::env::args().nth(1).unwrap_or_else(|| "../test_vectors.json".to_string());
+    std::fs::write(&out_path, &json).unwrap_or_else(|e| panic!("failed to write {out_path}: {e}"));
+    eprintln!("wrote {out_path}");
 }

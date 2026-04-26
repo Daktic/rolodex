@@ -1,0 +1,332 @@
+{
+  "version": "dexio.v1",
+  "generated_at": "2026-04-26T02:31:08.919113+00:00",
+  "generator_commit": "ca4c1bddca3f2283cefa2ab4cc8885ee62455156",
+  "vectors": {
+    "domain_constants": {
+      "DOMAIN_LEAF": "0x1ef66ed2de5f0cef1b8d7f06de87f546c23b7bd072b99029136d0f85fb40ece6",
+      "DOMAIN_NODE": "0x2ac1a6bd5f796ab859ada742ab2971b9ad2ad720e6696d4b3d43018d13c53501",
+      "DOMAIN_VALUE": "0x2b59d78ec1e6b2f4651eb39a969d729550e67bf5844db04d476905c1a5e4fc06",
+      "ZERO_LEAF": "0x1046f328ef4a1ff0dac4e7cb9c74d0e61ab9938fd904739e4b7bbd2719cf221c"
+    },
+    "empty_subtree_constants": {
+      "ZERO_LEVEL_0": "0x1046f328ef4a1ff0dac4e7cb9c74d0e61ab9938fd904739e4b7bbd2719cf221c",
+      "ZERO_LEVEL_1": "0x119b8589af535cc88cb818a123ab7d1077742e7ca7f72c5bf904fe4105b74b44",
+      "ZERO_LEVEL_2": "0x1e2ca8f5d6b9234fed8db144fe5758a928f387eabcf9c6257c7b34554890a2e9",
+      "ZERO_LEVEL_3": "0x2602db9af53d48323927edd8733a0c9e5eefca6656c7e29dc006a8235ba8dac2",
+      "ZERO_LEVEL_4": "0x0154b20832e32eb258ebe7f675c032d7428950c3e35872ca70169d946cbd660d",
+      "ZERO_LEVEL_5": "0x047a14e4212e00fb57e8dcac538d6dec1c8d8ea6c3983289545a5101830a72e5",
+      "ZERO_LEVEL_6": "0x2b38d92227d10fed142b1b35cbbfce3861f71b075d568a3e731634bed77d7de7",
+      "ZERO_LEVEL_7": "0x069d9c3149affa621c3c7b28a29c6dd92e6ca749ed419175b8b40e94e46cd2eb"
+    },
+    "field_name_encoding": [
+      {
+        "name": "short",
+        "inputs": {
+          "field_name": "email"
+        },
+        "outputs": {
+          "field_name_fe": "0x000000000000000000000000000000000000000000000000000000656d61696c"
+        }
+      },
+      {
+        "name": "boundary_31",
+        "inputs": {
+          "field_name": "a_31_byte_field_name_exactly_xx"
+        },
+        "outputs": {
+          "field_name_fe": "0x00615f33315f627974655f6669656c645f6e616d655f65786163746c795f7878"
+        }
+      }
+    ],
+    "value_encoding": [
+      {
+        "name": "short_ascii",
+        "inputs": {
+          "value": "hello"
+        },
+        "outputs": {
+          "canonical_bytes": "0x68656c6c6f",
+          "byte_length": 5,
+          "chunks": [
+            "0x0068656c6c6f0000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000"
+          ],
+          "value_commitment": "0x10bb7eaa3da2f824377ff23b967041a88d98aa1db81506f0341cc1274c50714c"
+        }
+      },
+      {
+        "name": "single_byte",
+        "inputs": {
+          "value": "a"
+        },
+        "outputs": {
+          "canonical_bytes": "0x61",
+          "byte_length": 1,
+          "chunks": [
+            "0x0061000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000"
+          ],
+          "value_commitment": "0x03f497961c046345f4bcdb74f95a74e6df06ef5cfe3cc670b888d196d5233a63"
+        }
+      },
+      {
+        "name": "unicode_nfc",
+        "inputs": {
+          "value": "café"
+        },
+        "outputs": {
+          "canonical_bytes": "0x636166c3a9",
+          "byte_length": 5,
+          "chunks": [
+            "0x00636166c3a90000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000"
+          ],
+          "value_commitment": "0x1f5a0d0337649f30333a2bb49f3aebe54de081416189c01c3362a0181392f920"
+        }
+      },
+      {
+        "name": "max_length_ascii",
+        "inputs": {
+          "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "outputs": {
+          "canonical_bytes": "0x61616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161",
+          "byte_length": 256,
+          "chunks": [
+            "0x0061616161616161616161616161616161616161616161616161616161616161",
+            "0x0061616161616161616161616161616161616161616161616161616161616161",
+            "0x0061616161616161616161616161616161616161616161616161616161616161",
+            "0x0061616161616161616161616161616161616161616161616161616161616161",
+            "0x0061616161616161616161616161616161616161616161616161616161616161",
+            "0x0061616161616161616161616161616161616161616161616161616161616161",
+            "0x0061616161616161616161616161616161616161616161616161616161616161",
+            "0x0061616161616161616161616161616161616161616161616161616161616161",
+            "0x0000000000000000000000000000000000000000000000006161616161616161"
+          ],
+          "value_commitment": "0x23f1709da53e9a34636617e2bcb177e145cf57ce32a016b75f4f3df2fdc141e7"
+        }
+      },
+      {
+        "name": "empty",
+        "inputs": {
+          "value": ""
+        },
+        "outputs": {
+          "canonical_bytes": "0x",
+          "byte_length": 0,
+          "chunks": [
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000000000000000000000000000"
+          ],
+          "value_commitment": "0x0e6b414a2d28e3f4339292b3853e7769a67724efe8257155a8361c0482dff7dd"
+        }
+      }
+    ],
+    "leaf_hash": [
+      {
+        "name": "simple",
+        "inputs": {
+          "field_name": "email",
+          "value": "alice@example.com",
+          "salt": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+        },
+        "outputs": {
+          "field_name_fe": "0x000000000000000000000000000000000000000000000000000000656d61696c",
+          "value_commitment": "0x0dbd82074ed449fe3639f0a0e55928c379b015ab2fd1a1f33d1eff881b114317",
+          "leaf": "0x03e3049b328e7a8c76bbb873521a30d1ec726ba09c9202ba7eb9e390a4096e37"
+        }
+      },
+      {
+        "name": "unicode_value",
+        "inputs": {
+          "field_name": "name",
+          "value": "café",
+          "salt": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+        },
+        "outputs": {
+          "field_name_fe": "0x000000000000000000000000000000000000000000000000000000006e616d65",
+          "value_commitment": "0x1f5a0d0337649f30333a2bb49f3aebe54de081416189c01c3362a0181392f920",
+          "leaf": "0x13ad0040c2317f04c18f73ec3414a196ce1808245f3c2008ed1c092b97f6aac4"
+        }
+      },
+      {
+        "name": "empty_value",
+        "inputs": {
+          "field_name": "middle_name",
+          "value": "",
+          "salt": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+        },
+        "outputs": {
+          "field_name_fe": "0x0000000000000000000000000000000000000000006d6964646c655f6e616d65",
+          "value_commitment": "0x0e6b414a2d28e3f4339292b3853e7769a67724efe8257155a8361c0482dff7dd",
+          "leaf": "0x0b0453ff20f1e280c46b94125763bc0b4bc76e73e58c9cfdb603f87032e5bf67"
+        }
+      }
+    ],
+    "merkle_tree": [
+      {
+        "name": "single_leaf",
+        "inputs": {
+          "leaves": [
+            {
+              "field_name": "email",
+              "value": "alice@example.com",
+              "salt": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+            }
+          ]
+        },
+        "outputs": {
+          "sorted_slots": [
+            {
+              "slot_index": 0,
+              "field_name": "email",
+              "leaf": "0x03e3049b328e7a8c76bbb873521a30d1ec726ba09c9202ba7eb9e390a4096e37"
+            }
+          ],
+          "root": "0x198340004b2224128a6119eab54bf8d11db02ce716628bbfad78b37712486d65",
+          "merkle_path": {
+            "proved_field": "email",
+            "slot_index": 0,
+            "siblings": [
+              "0x1046f328ef4a1ff0dac4e7cb9c74d0e61ab9938fd904739e4b7bbd2719cf221c",
+              "0x119b8589af535cc88cb818a123ab7d1077742e7ca7f72c5bf904fe4105b74b44",
+              "0x1e2ca8f5d6b9234fed8db144fe5758a928f387eabcf9c6257c7b34554890a2e9",
+              "0x2602db9af53d48323927edd8733a0c9e5eefca6656c7e29dc006a8235ba8dac2",
+              "0x0154b20832e32eb258ebe7f675c032d7428950c3e35872ca70169d946cbd660d",
+              "0x047a14e4212e00fb57e8dcac538d6dec1c8d8ea6c3983289545a5101830a72e5",
+              "0x2b38d92227d10fed142b1b35cbbfce3861f71b075d568a3e731634bed77d7de7",
+              "0x069d9c3149affa621c3c7b28a29c6dd92e6ca749ed419175b8b40e94e46cd2eb"
+            ]
+          }
+        }
+      },
+      {
+        "name": "three_fields",
+        "inputs": {
+          "leaves": [
+            {
+              "field_name": "name",
+              "value": "Alice",
+              "salt": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+            },
+            {
+              "field_name": "company",
+              "value": "Acme Corp",
+              "salt": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+            },
+            {
+              "field_name": "email",
+              "value": "alice@example.com",
+              "salt": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+            }
+          ]
+        },
+        "outputs": {
+          "sorted_slots": [
+            {
+              "slot_index": 0,
+              "field_name": "company",
+              "leaf": "0x01a9b6c1dcee4f4e2a334b833c0130e170dfea5ff1883a4df00ceacd09449290"
+            },
+            {
+              "slot_index": 1,
+              "field_name": "email",
+              "leaf": "0x03e3049b328e7a8c76bbb873521a30d1ec726ba09c9202ba7eb9e390a4096e37"
+            },
+            {
+              "slot_index": 2,
+              "field_name": "name",
+              "leaf": "0x102ada0156ffa260d01900a54af0f4b6d3a0d46a7a67fa2c7c72e27032bfcf96"
+            }
+          ],
+          "root": "0x18eb50a29d5a2220818301d223a329d5fc5d1fbf47366a39f4936b9794b90d49",
+          "merkle_path": {
+            "proved_field": "email",
+            "slot_index": 1,
+            "siblings": [
+              "0x01a9b6c1dcee4f4e2a334b833c0130e170dfea5ff1883a4df00ceacd09449290",
+              "0x057567ca157cbdcc9f54569e165d8fb8e02047eafeb652687cc56ee9fa962335",
+              "0x1e2ca8f5d6b9234fed8db144fe5758a928f387eabcf9c6257c7b34554890a2e9",
+              "0x2602db9af53d48323927edd8733a0c9e5eefca6656c7e29dc006a8235ba8dac2",
+              "0x0154b20832e32eb258ebe7f675c032d7428950c3e35872ca70169d946cbd660d",
+              "0x047a14e4212e00fb57e8dcac538d6dec1c8d8ea6c3983289545a5101830a72e5",
+              "0x2b38d92227d10fed142b1b35cbbfce3861f71b075d568a3e731634bed77d7de7",
+              "0x069d9c3149affa621c3c7b28a29c6dd92e6ca749ed419175b8b40e94e46cd2eb"
+            ]
+          }
+        }
+      }
+    ],
+    "signed_payload": [
+      {
+        "name": "three_fields_reveal_email",
+        "inputs": {
+          "private_key": "0x0101010101010101010101010101010101010101010101010101010101010101",
+          "signed_subset": {
+            "version": "dexio.v1",
+            "root": "0x18eb50a29d5a2220818301d223a329d5fc5d1fbf47366a39f4936b9794b90d49",
+            "revealed_names": [
+              "email"
+            ],
+            "sender_address": "0x1a642f0e3c3af545e7acbd38b07251b3990914f1"
+          }
+        },
+        "outputs": {
+          "canonical_cbor": "0xa464726f6f74582018eb50a29d5a2220818301d223a329d5fc5d1fbf47366a39f4936b9794b90d496776657273696f6e68646578696f2e76316e72657665616c65645f6e616d65738165656d61696c6e73656e6465725f61646472657373541a642f0e3c3af545e7acbd38b07251b3990914f1",
+          "keccak256_digest": "0x3bab69cebc3c194e7c0e56f0aee0fb379285bac37e720ed15a805794a3b6953d",
+          "signature": "0x3ba44ee8c9c943d6bc7e26c34ad2607932793cc296e44813ba9eb97b78e42de825289caeeb85d5314e47ec545fb36e9f38619f373044508cb6ff98796b56190701",
+          "recovered_address": "0x1a642f0e3c3af545e7acbd38b07251b3990914f1"
+        }
+      }
+    ],
+    "proof_request_digest": [
+      {
+        "name": "domain_eq_email",
+        "inputs": {
+          "version": "dexio.v1",
+          "alice_root": "0x18eb50a29d5a2220818301d223a329d5fc5d1fbf47366a39f4936b9794b90d49",
+          "alice_address": "0x1a642f0e3c3af545e7acbd38b07251b3990914f1",
+          "field_name": "email",
+          "verifier_address": "0x2222222222222222222222222222222222222222",
+          "nonce": "0xabababababababababababababababababababababababababababababababab",
+          "timestamp": 1700000000,
+          "predicate_id": "domain_eq.v1",
+          "predicate_inputs": "0x6578616d706c652e636f6d"
+        },
+        "outputs": {
+          "canonical_cbor": "0xa9656e6f6e63655820abababababababababababababababababababababababababababababababab6776657273696f6e68646578696f2e76316974696d657374616d701a6553f1006a616c6963655f726f6f74582018eb50a29d5a2220818301d223a329d5fc5d1fbf47366a39f4936b9794b90d496a6669656c645f6e616d6565656d61696c6c7072656469636174655f69646c646f6d61696e5f65712e76316d616c6963655f61646472657373541a642f0e3c3af545e7acbd38b07251b3990914f1707072656469636174655f696e707574734b6578616d706c652e636f6d7076657269666965725f61646472657373542222222222222222222222222222222222222222",
+          "digest": "0x10bf6c445cb1d1dde7365f13eb0f67fb2252edf52312e2d285f0dfd19fd77ff6"
+        }
+      }
+    ]
+  }
+}
