@@ -21,6 +21,16 @@ const TEST_PRIVATE_KEY: &str =
 // Reusing or leaking the salt destroys the hiding property of the leaf commitment.
 const TEST_SALT: &str = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
 
+// TEST-ONLY: Fixed nonce for reproducible spec test vectors.
+// In production, each ProofRequest MUST use a freshly CSPRNG-generated 32-byte nonce.
+const TEST_NONCE: [u8; 32] = [0xabu8; 32];
+
+// TEST-ONLY: Fixed verifier address for spec test vectors. Obviously fake (all-0x22).
+const TEST_VERIFIER_ADDRESS: [u8; 20] = [0x22u8; 20];
+
+// Fixed timestamp used ONLY for reproducibility. Real implementations use current unix seconds.
+const TEST_TIMESTAMP: u64 = 1_700_000_000;
+
 #[derive(Serialize)]
 struct TestVectors {
     version: String,
@@ -38,6 +48,7 @@ struct Vectors {
     leaf_hash: Vec<LeafHashVector>,
     merkle_tree: Vec<MerkleTreeVector>,
     signed_payload: Vec<SignedPayloadVector>,
+    proof_request_digest: Vec<ProofRequestDigestVector>,
 }
 
 #[derive(Serialize)]
@@ -169,6 +180,33 @@ struct SignedPayloadOutputs {
     // 65 bytes: r(32) || s(32) || v(1), v ∈ {0, 1} (raw recovery id, not +27)
     signature: HexBytes,
     recovered_address: String,
+}
+
+#[derive(Serialize)]
+struct ProofRequestDigestVector {
+    name: String,
+    inputs: ProofRequestData,
+    outputs: ProofRequestDigestOutputs,
+}
+
+#[derive(Serialize)]
+struct ProofRequestData {
+    version: String,
+    alice_root: HexField,
+    alice_address: String,
+    field_name: String,
+    verifier_address: String,
+    nonce: HexBytes,
+    timestamp: u64,
+    predicate_id: String,
+    predicate_inputs: HexBytes,
+}
+
+#[derive(Serialize)]
+struct ProofRequestDigestOutputs {
+    canonical_cbor: HexBytes,
+    // poseidon2_hash(pack_31_byte_chunks(canonical_cbor)) — a single Field element
+    digest: HexField,
 }
 
 #[derive(Serialize)]
@@ -486,6 +524,98 @@ fn compute_value_encoding(name: &str, raw: &str) -> ValueEncodingVector {
     }
 }
 
+// Encode ProofRequest as canonical CBOR (RFC 8949 §4.2).
+// Key sort order (bytewise-encoded-key):
+//   nonce(5) < version(7) < timestamp(9) < alice_root(10) = field_name(10 → 'a'<'f')
+//   < predicate_id(12) < alice_address(13) < predicate_inputs(16,'p') < verifier_address(16,'v')
+fn canonical_cbor_proof_request(
+    version: &str,
+    alice_root: &[u8; 32],
+    alice_address: &[u8; 20],
+    field_name: &str,
+    verifier_address: &[u8; 20],
+    nonce: &[u8; 32],
+    timestamp: u64,
+    predicate_id: &str,
+    predicate_inputs: &[u8],
+) -> Vec<u8> {
+    use ciborium::value::{Integer, Value};
+    let map = Value::Map(vec![
+        (Value::Text("nonce".into()),             Value::Bytes(nonce.to_vec())),
+        (Value::Text("version".into()),           Value::Text(version.into())),
+        (Value::Text("timestamp".into()),         Value::Integer(Integer::from(timestamp as u32))),
+        (Value::Text("alice_root".into()),        Value::Bytes(alice_root.to_vec())),
+        (Value::Text("field_name".into()),        Value::Text(field_name.into())),
+        (Value::Text("predicate_id".into()),      Value::Text(predicate_id.into())),
+        (Value::Text("alice_address".into()),     Value::Bytes(alice_address.to_vec())),
+        (Value::Text("predicate_inputs".into()),  Value::Bytes(predicate_inputs.to_vec())),
+        (Value::Text("verifier_address".into()),  Value::Bytes(verifier_address.to_vec())),
+    ]);
+    let mut out = Vec::new();
+    ciborium::ser::into_writer(&map, &mut out).expect("CBOR encoding failed");
+    out
+}
+
+fn compute_proof_request_digest(name: &str) -> ProofRequestDigestVector {
+    // Reuse the same root and alice_address as the signed payload for end-to-end coherence.
+    let root_bytes = {
+        let sorted = [
+            ("company", "Acme Corp",         TEST_SALT),
+            ("email",   "alice@example.com", TEST_SALT),
+            ("name",    "Alice",             TEST_SALT),
+        ];
+        let real_hashes: Vec<FieldElement> = sorted.iter()
+            .map(|&(f, v, s)| compute_leaf_fe(f, v, s))
+            .collect();
+        let mut leaves = vec![zero_leaf_constant(); TREE_WIDTH];
+        for (i, hash) in real_hashes.iter().enumerate() { leaves[i] = *hash; }
+        let levels = build_levels(&leaves);
+        field_to_be_bytes(levels[TREE_DEPTH][0])
+    };
+
+    let pk_bytes: [u8; 32] = hex::decode(TEST_PRIVATE_KEY.trim_start_matches("0x"))
+        .unwrap().try_into().unwrap();
+    let signing_key = k256::ecdsa::SigningKey::from_slice(&pk_bytes).unwrap();
+    let alice_address = eth_address_from_signing_key(&signing_key);
+
+    let predicate_inputs = b"example.com"; // domain equality target for "domain_eq.v1"
+
+    let cbor_bytes = canonical_cbor_proof_request(
+        "dexio.v1",
+        &root_bytes,
+        &alice_address,
+        "email",
+        &TEST_VERIFIER_ADDRESS,
+        &TEST_NONCE,
+        TEST_TIMESTAMP,
+        "domain_eq.v1",
+        predicate_inputs,
+    );
+
+    // Digest = poseidon2_hash over 31-byte-packed CBOR chunks (§9.2.2)
+    let fes: Vec<FieldElement> = cbor_bytes.chunks(CHUNK_BYTES).map(pack_chunk_to_fe).collect();
+    let digest = poseidon2_hash(&fes);
+
+    ProofRequestDigestVector {
+        name: name.to_string(),
+        inputs: ProofRequestData {
+            version: "dexio.v1".to_string(),
+            alice_root: HexField(root_bytes),
+            alice_address: format!("0x{}", hex::encode(alice_address)),
+            field_name: "email".to_string(),
+            verifier_address: format!("0x{}", hex::encode(TEST_VERIFIER_ADDRESS)),
+            nonce: HexBytes(TEST_NONCE.to_vec()),
+            timestamp: TEST_TIMESTAMP,
+            predicate_id: "domain_eq.v1".to_string(),
+            predicate_inputs: HexBytes(predicate_inputs.to_vec()),
+        },
+        outputs: ProofRequestDigestOutputs {
+            canonical_cbor: HexBytes(cbor_bytes),
+            digest: HexField(field_to_be_bytes(digest)),
+        },
+    }
+}
+
 // Encode SignedSubset as canonical CBOR (RFC 8949 §4.2).
 // Map keys are in bytewise-encoded-key order: root(4) < version(7) < revealed_names(14) < sender_address(14).
 fn canonical_cbor_signed_subset(
@@ -618,6 +748,9 @@ fn main() {
             ],
             signed_payload: vec![
                 compute_signed_payload("three_fields_reveal_email"),
+            ],
+            proof_request_digest: vec![
+                compute_proof_request_digest("domain_eq_email"),
             ],
             value_encoding: vec![
                 compute_value_encoding("short_ascii", "hello"),
