@@ -18,6 +18,7 @@ struct TestVectors {
 #[derive(Serialize)]
 struct Vectors {
     domain_constants: DomainConstants,
+    empty_subtree_constants: EmptySubtreeConstants,
     value_encoding: Vec<ValueEncodingVector>,
 }
 
@@ -39,6 +40,18 @@ struct ValueEncodingOutputs {
     byte_length: usize,
     chunks: Vec<HexField>,
     value_commitment: HexField,
+}
+
+#[derive(Serialize)]
+struct EmptySubtreeConstants {
+    #[serde(rename = "ZERO_LEVEL_0")] zero_level_0: HexField,
+    #[serde(rename = "ZERO_LEVEL_1")] zero_level_1: HexField,
+    #[serde(rename = "ZERO_LEVEL_2")] zero_level_2: HexField,
+    #[serde(rename = "ZERO_LEVEL_3")] zero_level_3: HexField,
+    #[serde(rename = "ZERO_LEVEL_4")] zero_level_4: HexField,
+    #[serde(rename = "ZERO_LEVEL_5")] zero_level_5: HexField,
+    #[serde(rename = "ZERO_LEVEL_6")] zero_level_6: HexField,
+    #[serde(rename = "ZERO_LEVEL_7")] zero_level_7: HexField,
 }
 
 #[derive(Serialize)]
@@ -112,8 +125,38 @@ fn domain_hash(label: &str) -> HexField {
     HexField(field_to_be_bytes(domain_label_fe(label)))
 }
 
+fn domain_node_constant() -> FieldElement {
+    domain_label_fe("dexio.v1.node")
+}
+
 fn domain_value_constant() -> FieldElement {
     domain_label_fe("dexio.v1.value")
+}
+
+fn zero_leaf_constant() -> FieldElement {
+    domain_label_fe("dexio.v1.zero_leaf")
+}
+
+fn compute_empty_subtree_constants() -> EmptySubtreeConstants {
+    // §8.4: ZERO_LEVEL_0 = ZERO_LEAF; each higher level hashes the level below with itself.
+    let domain_node = domain_node_constant();
+    let levels: Vec<FieldElement> = std::iter::successors(
+        Some(zero_leaf_constant()),
+        |prev| Some(poseidon2_hash(&[domain_node, *prev, *prev])),
+    )
+    .take(8)
+    .collect();
+
+    EmptySubtreeConstants {
+        zero_level_0: HexField(field_to_be_bytes(levels[0])),
+        zero_level_1: HexField(field_to_be_bytes(levels[1])),
+        zero_level_2: HexField(field_to_be_bytes(levels[2])),
+        zero_level_3: HexField(field_to_be_bytes(levels[3])),
+        zero_level_4: HexField(field_to_be_bytes(levels[4])),
+        zero_level_5: HexField(field_to_be_bytes(levels[5])),
+        zero_level_6: HexField(field_to_be_bytes(levels[6])),
+        zero_level_7: HexField(field_to_be_bytes(levels[7])),
+    }
 }
 
 fn compute_domain_constants() -> DomainConstants {
@@ -196,6 +239,7 @@ fn main() {
         generator_commit: git_shaw,
         vectors: Vectors {
             domain_constants: compute_domain_constants(),
+            empty_subtree_constants: compute_empty_subtree_constants(),
             value_encoding: vec![
                 compute_value_encoding("short_ascii", "hello"),
                 compute_value_encoding("single_byte", "a"),
