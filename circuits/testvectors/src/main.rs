@@ -6,6 +6,8 @@ use unicode_normalization::UnicodeNormalization;
 const MAX_VALUE_BYTES: usize = 256;
 const CHUNK_BYTES: usize = 31;
 const VALUE_CHUNKS: usize = (MAX_VALUE_BYTES + CHUNK_BYTES - 1) / CHUNK_BYTES;
+const TREE_DEPTH: usize = 8;
+const TREE_WIDTH: usize = 1 << TREE_DEPTH; // 256 leaves
 
 // Fixed salt used ONLY for generating reproducible spec test vectors.
 // In production, each leaf MUST use a unique, cryptographically random salt that is
@@ -28,6 +30,7 @@ struct Vectors {
     field_name_encoding: Vec<FieldNameEncodingVector>,
     value_encoding: Vec<ValueEncodingVector>,
     leaf_hash: Vec<LeafHashVector>,
+    merkle_tree: Vec<MerkleTreeVector>,
 }
 
 #[derive(Serialize)]
@@ -86,6 +89,49 @@ struct LeafHashOutputs {
     field_name_fe: HexField,
     value_commitment: HexField,
     leaf: HexField,
+}
+
+#[derive(Serialize)]
+struct MerkleTreeVector {
+    name: String,
+    inputs: MerkleTreeInputs,
+    outputs: MerkleTreeOutputs,
+}
+
+#[derive(Serialize)]
+struct MerkleTreeInputs {
+    // Input order is intentionally unsorted to exercise the sort step.
+    leaves: Vec<MerkleLeafInput>,
+}
+
+#[derive(Serialize)]
+struct MerkleLeafInput {
+    field_name: String,
+    value: String,
+    salt: String,
+}
+
+#[derive(Serialize)]
+struct MerkleTreeOutputs {
+    sorted_slots: Vec<SlotAssignment>,
+    root: HexField,
+    merkle_path: MerklePath,
+}
+
+#[derive(Serialize)]
+struct SlotAssignment {
+    slot_index: usize,
+    field_name: String,
+    leaf: HexField,
+}
+
+#[derive(Serialize)]
+struct MerklePath {
+    proved_field: String,
+    slot_index: usize,
+    // siblings[k] = sibling of the proved node at tree level k (0 = leaves, 7 = just below root).
+    // Direction at level k: (slot_index >> k) & 1 == 0 means proved node is left child.
+    siblings: Vec<HexField>,
 }
 
 #[derive(Serialize)]
@@ -240,8 +286,92 @@ fn compute_field_name_encoding(name: &str, field_name: &str) -> FieldNameEncodin
     }
 }
 
+// Shared primitive used by compute_leaf_hash (for vectors) and compute_merkle_tree.
+fn compute_leaf_fe(field_name: &str, value: &str, salt_hex: &str) -> FieldElement {
+    let salt = pack_chunk_to_fe(
+        &hex::decode(salt_hex.trim_start_matches("0x")).expect("invalid salt hex"),
+    );
+    let field_name_fe = field_name_to_fe(field_name);
+    let canonical = canonicalize_value(value);
+    assert!(canonical.len() <= MAX_VALUE_BYTES);
+    let value_commitment = compute_value_commitment(
+        canonical.len(),
+        &pack_big_endian(&pad_to_max(&canonical)),
+    );
+    poseidon2_hash(&[domain_leaf_constant(), field_name_fe, value_commitment, salt])
+}
+
+// Build all TREE_DEPTH+1 levels of the tree from the full leaf array.
+// levels[0] = 256 leaves, levels[TREE_DEPTH] = [root].
+fn build_levels(leaves: &[FieldElement]) -> Vec<Vec<FieldElement>> {
+    assert_eq!(leaves.len(), TREE_WIDTH);
+    let domain_node = domain_node_constant();
+    let mut levels = vec![leaves.iter().copied().collect::<Vec<_>>()];
+    while levels.last().unwrap().len() > 1 {
+        let next = levels.last().unwrap()
+            .chunks(2)
+            .map(|pair| poseidon2_hash(&[domain_node, pair[0], pair[1]]))
+            .collect();
+        levels.push(next);
+    }
+    levels
+}
+
+fn compute_merkle_tree(
+    name: &str,
+    leaf_inputs: &[(&str, &str, &str)], // (field_name, value, salt_hex) — unsorted
+    prove_field: &str,
+) -> MerkleTreeVector {
+    // Sort slots by field_name ascending (§8.2).
+    let mut sorted = leaf_inputs.to_vec();
+    sorted.sort_by_key(|&(fname, _, _)| fname);
+
+    let real_hashes: Vec<FieldElement> = sorted.iter()
+        .map(|&(fname, val, salt)| compute_leaf_fe(fname, val, salt))
+        .collect();
+
+    // Fill 256-entry leaf array; empty slots hold ZERO_LEAF.
+    let mut leaves = vec![zero_leaf_constant(); TREE_WIDTH];
+    for (i, hash) in real_hashes.iter().enumerate() {
+        leaves[i] = *hash;
+    }
+
+    let levels = build_levels(&leaves);
+    let root = levels[TREE_DEPTH][0];
+
+    let prove_slot = sorted.iter().position(|&(fname, _, _)| fname == prove_field)
+        .expect("prove_field not in leaf_inputs");
+
+    let siblings: Vec<HexField> = (0..TREE_DEPTH)
+        .map(|lvl| HexField(field_to_be_bytes(levels[lvl][(prove_slot >> lvl) ^ 1])))
+        .collect();
+
+    MerkleTreeVector {
+        name: name.to_string(),
+        inputs: MerkleTreeInputs {
+            leaves: leaf_inputs.iter().map(|&(fname, val, salt)| MerkleLeafInput {
+                field_name: fname.to_string(),
+                value: val.to_string(),
+                salt: salt.to_string(),
+            }).collect(),
+        },
+        outputs: MerkleTreeOutputs {
+            sorted_slots: sorted.iter().enumerate().map(|(i, &(fname, _, _))| SlotAssignment {
+                slot_index: i,
+                field_name: fname.to_string(),
+                leaf: HexField(field_to_be_bytes(real_hashes[i])),
+            }).collect(),
+            root: HexField(field_to_be_bytes(root)),
+            merkle_path: MerklePath {
+                proved_field: prove_field.to_string(),
+                slot_index: prove_slot,
+                siblings,
+            },
+        },
+    }
+}
+
 fn compute_leaf_hash(name: &str, field_name: &str, value: &str, salt_hex: &str) -> LeafHashVector {
-    // Decode salt from hex string into a field element.
     let salt_bytes = hex::decode(salt_hex.trim_start_matches("0x")).expect("invalid salt hex");
     let salt = pack_chunk_to_fe(&salt_bytes);
 
@@ -346,6 +476,17 @@ fn main() {
                 compute_leaf_hash("simple",       "email",       "alice@example.com", TEST_SALT),
                 compute_leaf_hash("unicode_value", "name",        "cafe\u{0301}",      TEST_SALT),
                 compute_leaf_hash("empty_value",  "middle_name", "",                  TEST_SALT),
+            ],
+            merkle_tree: vec![
+                compute_merkle_tree("single_leaf", &[
+                    ("email", "alice@example.com", TEST_SALT),
+                ], "email"),
+                // Inputs deliberately out of alphabetical order to exercise sorting.
+                compute_merkle_tree("three_fields", &[
+                    ("name",    "Alice",            TEST_SALT),
+                    ("company", "Acme Corp",        TEST_SALT),
+                    ("email",   "alice@example.com", TEST_SALT),
+                ], "email"),
             ],
             value_encoding: vec![
                 compute_value_encoding("short_ascii", "hello"),
