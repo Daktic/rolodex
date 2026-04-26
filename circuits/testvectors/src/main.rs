@@ -1,6 +1,7 @@
 use acir_field::FieldElement;
 use bn254_blackbox_solver::poseidon2_permutation;
 use serde::Serialize;
+use sha3::{Digest, Keccak256};
 use unicode_normalization::UnicodeNormalization;
 
 const MAX_VALUE_BYTES: usize = 256;
@@ -8,6 +9,11 @@ const CHUNK_BYTES: usize = 31;
 const VALUE_CHUNKS: usize = (MAX_VALUE_BYTES + CHUNK_BYTES - 1) / CHUNK_BYTES;
 const TREE_DEPTH: usize = 8;
 const TREE_WIDTH: usize = 1 << TREE_DEPTH; // 256 leaves
+
+// TEST-ONLY: Fixed private key for reproducible spec test vectors.
+// NEVER use this key for any real purpose. Real implementations must generate a fresh
+const TEST_PRIVATE_KEY: &str =
+    "0x0101010101010101010101010101010101010101010101010101010101010101";
 
 // Fixed salt used ONLY for generating reproducible spec test vectors.
 // In production, each leaf MUST use a unique, cryptographically random salt that is
@@ -31,6 +37,7 @@ struct Vectors {
     value_encoding: Vec<ValueEncodingVector>,
     leaf_hash: Vec<LeafHashVector>,
     merkle_tree: Vec<MerkleTreeVector>,
+    signed_payload: Vec<SignedPayloadVector>,
 }
 
 #[derive(Serialize)]
@@ -132,6 +139,36 @@ struct MerklePath {
     // siblings[k] = sibling of the proved node at tree level k (0 = leaves, 7 = just below root).
     // Direction at level k: (slot_index >> k) & 1 == 0 means proved node is left child.
     siblings: Vec<HexField>,
+}
+
+#[derive(Serialize)]
+struct SignedPayloadVector {
+    name: String,
+    inputs: SignedPayloadInputs,
+    outputs: SignedPayloadOutputs,
+}
+
+#[derive(Serialize)]
+struct SignedPayloadInputs {
+    private_key: String,
+    signed_subset: SignedSubsetInput,
+}
+
+#[derive(Serialize)]
+struct SignedSubsetInput {
+    version: String,
+    root: HexField,
+    revealed_names: Vec<String>,
+    sender_address: String,
+}
+
+#[derive(Serialize)]
+struct SignedPayloadOutputs {
+    canonical_cbor: HexBytes,
+    keccak256_digest: HexBytes,
+    // 65 bytes: r(32) || s(32) || v(1), v ∈ {0, 1} (raw recovery id, not +27)
+    signature: HexBytes,
+    recovered_address: String,
 }
 
 #[derive(Serialize)]
@@ -449,6 +486,97 @@ fn compute_value_encoding(name: &str, raw: &str) -> ValueEncodingVector {
     }
 }
 
+// Encode SignedSubset as canonical CBOR (RFC 8949 §4.2).
+// Map keys are in bytewise-encoded-key order: root(4) < version(7) < revealed_names(14) < sender_address(14).
+fn canonical_cbor_signed_subset(
+    version: &str,
+    root: &[u8; 32],
+    revealed_names: &[String],
+    sender_address: &[u8; 20],
+) -> Vec<u8> {
+    use ciborium::value::Value;
+    let map = Value::Map(vec![
+        (Value::Text("root".into()),           Value::Bytes(root.to_vec())),
+        (Value::Text("version".into()),        Value::Text(version.into())),
+        (Value::Text("revealed_names".into()), Value::Array(
+            revealed_names.iter().map(|n| Value::Text(n.clone())).collect(),
+        )),
+        (Value::Text("sender_address".into()), Value::Bytes(sender_address.to_vec())),
+    ]);
+    let mut out = Vec::new();
+    ciborium::ser::into_writer(&map, &mut out).expect("CBOR encoding failed");
+    out
+}
+
+fn eth_address_from_signing_key(signing_key: &k256::ecdsa::SigningKey) -> [u8; 20] {
+    let pubkey = signing_key.verifying_key().to_encoded_point(false); // uncompressed
+    let hash = Keccak256::digest(&pubkey.as_bytes()[1..]); // skip 0x04 prefix
+    hash[12..].try_into().expect("keccak256 is 32 bytes")
+}
+
+fn compute_signed_payload(name: &str) -> SignedPayloadVector {
+    // Use the three_fields Merkle root as an end-to-end realistic root value.
+    let root_bytes = {
+        let sorted = [
+            ("company", "Acme Corp",         TEST_SALT),
+            ("email",   "alice@example.com", TEST_SALT),
+            ("name",    "Alice",             TEST_SALT),
+        ];
+        let real_hashes: Vec<FieldElement> = sorted.iter()
+            .map(|&(f, v, s)| compute_leaf_fe(f, v, s))
+            .collect();
+        let mut leaves = vec![zero_leaf_constant(); TREE_WIDTH];
+        for (i, hash) in real_hashes.iter().enumerate() { leaves[i] = *hash; }
+        let levels = build_levels(&leaves);
+        field_to_be_bytes(levels[TREE_DEPTH][0])
+    };
+
+    let pk_bytes: [u8; 32] = hex::decode(TEST_PRIVATE_KEY.trim_start_matches("0x"))
+        .unwrap().try_into().unwrap();
+    let signing_key = k256::ecdsa::SigningKey::from_slice(&pk_bytes).unwrap();
+    let sender_address = eth_address_from_signing_key(&signing_key);
+
+    let version = "dexio.v1";
+    let revealed_names = vec!["email".to_string()];
+
+    let cbor_bytes = canonical_cbor_signed_subset(version, &root_bytes, &revealed_names, &sender_address);
+    let digest: [u8; 32] = Keccak256::digest(&cbor_bytes).into();
+
+    let (sig, recid) = signing_key.sign_prehash_recoverable(&digest).unwrap();
+    let mut full_sig = [0u8; 65];
+    full_sig[..64].copy_from_slice(&sig.to_bytes());
+    full_sig[64] = recid.to_byte();
+
+    let recovered_address = {
+        let recovered_vk = k256::ecdsa::VerifyingKey::recover_from_prehash(
+            &digest, &sig, recid,
+        ).unwrap();
+        let pubkey = recovered_vk.to_encoded_point(false);
+        let hash = Keccak256::digest(&pubkey.as_bytes()[1..]);
+        let addr: [u8; 20] = hash[12..].try_into().unwrap();
+        addr
+    };
+    assert_eq!(sender_address, recovered_address, "recovered address must match sender_address");
+
+    SignedPayloadVector {
+        name: name.to_string(),
+        inputs: SignedPayloadInputs {
+            private_key: TEST_PRIVATE_KEY.to_string(),
+            signed_subset: SignedSubsetInput {
+                version: version.to_string(),
+                root: HexField(root_bytes),
+                revealed_names: revealed_names.clone(),
+                sender_address: format!("0x{}", hex::encode(sender_address)),
+            },
+        },
+        outputs: SignedPayloadOutputs {
+            canonical_cbor: HexBytes(cbor_bytes),
+            keccak256_digest: HexBytes(digest.to_vec()),
+            signature: HexBytes(full_sig.to_vec()),
+            recovered_address: format!("0x{}", hex::encode(recovered_address)),
+        },
+    }
+}
 
 fn main() {
     // Get the current git commit hash at runtime
@@ -487,6 +615,9 @@ fn main() {
                     ("company", "Acme Corp",        TEST_SALT),
                     ("email",   "alice@example.com", TEST_SALT),
                 ], "email"),
+            ],
+            signed_payload: vec![
+                compute_signed_payload("three_fields_reveal_email"),
             ],
             value_encoding: vec![
                 compute_value_encoding("short_ascii", "hello"),
