@@ -19,7 +19,9 @@ const TEST_PRIVATE_KEY: &str =
 // In production, each leaf MUST use a unique, cryptographically random salt that is
 // generated at issuance time and stored securely alongside the credential.
 // Reusing or leaking the salt destroys the hiding property of the leaf commitment.
-const TEST_SALT: &str = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+// High byte is 0x00, guaranteeing the value is < p without reduction.
+// The hex form and the field element form are identical.
+const TEST_SALT: &str = "0x001234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd";
 
 // TEST-ONLY: Fixed nonce for reproducible spec test vectors.
 // In production, each ProofRequest MUST use a freshly CSPRNG-generated 32-byte nonce.
@@ -148,8 +150,9 @@ struct MerklePath {
     proved_field: String,
     slot_index: usize,
     // siblings[k] = sibling of the proved node at tree level k (0 = leaves, 7 = just below root).
-    // Direction at level k: (slot_index >> k) & 1 == 0 means proved node is left child.
     siblings: Vec<HexField>,
+    // directions[k] = false → proved node is left child at level k; true → right child.
+    directions: Vec<bool>,
 }
 
 #[derive(Serialize)]
@@ -274,7 +277,8 @@ fn field_to_be_bytes(f: FieldElement) -> [u8; 32] {
 }
 
 // Right-align `chunk` (≤32 bytes) in a 32-byte buffer and interpret as a big-endian integer.
-// Shared primitive used by domain_label_fe, field_name_to_fe, and pack_big_endian.
+// Used only for raw field-element values (e.g., salts) that are already canonically sized.
+// For structured byte strings (labels, field names, CBOR), use bytes_to_field_elements instead.
 fn pack_chunk_to_fe(chunk: &[u8]) -> FieldElement {
     assert!(chunk.len() <= 32);
     let mut buf = [0u8; 32];
@@ -282,15 +286,26 @@ fn pack_chunk_to_fe(chunk: &[u8]) -> FieldElement {
     FieldElement::from_be_bytes_reduce(&buf)
 }
 
-// Compute poseidon2_hash of a domain label string packed big-endian (§4.1, §6.1).
+// Canonical bytes-to-FEs conversion per §4.3.
+// Right-pads `bytes` to the next multiple of CHUNK_BYTES, then splits into CHUNK_BYTES-byte
+// groups. Each group is placed left-aligned in the 31-byte data region of a 32-byte buffer
+// (high byte is always 0x00), yielding one field element per chunk.
+fn bytes_to_field_elements(bytes: &[u8]) -> Vec<FieldElement> {
+    let n_chunks = (bytes.len() + CHUNK_BYTES - 1) / CHUNK_BYTES;
+    let padded_len = n_chunks * CHUNK_BYTES;
+    let mut padded = bytes.to_vec();
+    padded.resize(padded_len, 0);
+    padded.chunks(CHUNK_BYTES).map(|chunk| {
+        let mut buf = [0u8; 32];
+        buf[1..32].copy_from_slice(chunk); // left-aligned in the 31-byte data region
+        FieldElement::from_be_bytes_reduce(&buf)
+    }).collect()
+}
+
+// Compute poseidon2_hash of a domain label string via bytes_to_fes (§4.1, §4.3).
 // Single source of truth — call this wherever a domain FieldElement is needed.
 fn domain_label_fe(label: &str) -> FieldElement {
-    let inputs: Vec<FieldElement> = label
-        .as_bytes()
-        .chunks(CHUNK_BYTES)
-        .map(pack_chunk_to_fe)
-        .collect();
-    poseidon2_hash(&inputs)
+    poseidon2_hash(&bytes_to_field_elements(label.as_bytes()))
 }
 
 fn domain_hash(label: &str) -> HexField {
@@ -344,11 +359,13 @@ fn compute_domain_constants() -> DomainConstants {
     DomainConstants { domain_leaf, domain_node, domain_value, zero_leaf }
 }
 
-// §6.1: pack_big_endian(utf8(field_name), CHUNK_BYTES)[0]
-// Field names are ≤31 bytes (§4.1), so they always fit in a single field element.
+// §6.1: bytes_to_fes(utf8(field_name))[0] per §4.3.
+// Field names are ≤31 bytes (§4.1), so they always produce exactly one field element.
 pub fn field_name_to_fe(field_name: &str) -> FieldElement {
     assert!(field_name.len() <= CHUNK_BYTES, "field name exceeds {CHUNK_BYTES} bytes");
-    pack_chunk_to_fe(field_name.as_bytes())
+    let fes = bytes_to_field_elements(field_name.as_bytes());
+    assert_eq!(fes.len(), 1);
+    fes[0]
 }
 
 fn compute_field_name_encoding(name: &str, field_name: &str) -> FieldNameEncodingVector {
@@ -421,6 +438,10 @@ fn compute_merkle_tree(
         .map(|lvl| HexField(field_to_be_bytes(levels[lvl][(prove_slot >> lvl) ^ 1])))
         .collect();
 
+    let directions: Vec<bool> = (0..TREE_DEPTH)
+        .map(|lvl| (prove_slot >> lvl) & 1 == 1)
+        .collect();
+
     MerkleTreeVector {
         name: name.to_string(),
         inputs: MerkleTreeInputs {
@@ -441,6 +462,7 @@ fn compute_merkle_tree(
                 proved_field: prove_field.to_string(),
                 slot_index: prove_slot,
                 siblings,
+                directions,
             },
         },
     }
@@ -480,11 +502,11 @@ fn canonicalize_value(s: &str) -> Vec<u8> {
     s.nfc().collect::<String>().into_bytes()
 }
 
-// Pack `bytes` (must be exactly MAX_VALUE_BYTES long) into VALUE_CHUNKS field elements.
-// Each 31-byte chunk is right-aligned in a 32-byte buffer and read as a big-endian integer.
+// Pack `bytes` (must be exactly MAX_VALUE_BYTES long) into VALUE_CHUNKS field elements
+// using the canonical bytes_to_fes rule (§4.3, §5.2).
 fn pack_big_endian(bytes: &[u8]) -> Vec<FieldElement> {
     assert_eq!(bytes.len(), MAX_VALUE_BYTES, "input must be exactly {MAX_VALUE_BYTES} bytes");
-    let out: Vec<FieldElement> = bytes.chunks(CHUNK_BYTES).map(pack_chunk_to_fe).collect();
+    let out = bytes_to_field_elements(bytes);
     assert_eq!(out.len(), VALUE_CHUNKS);
     out
 }
@@ -543,7 +565,7 @@ fn canonical_cbor_proof_request(
     let map = Value::Map(vec![
         (Value::Text("nonce".into()),             Value::Bytes(nonce.to_vec())),
         (Value::Text("version".into()),           Value::Text(version.into())),
-        (Value::Text("timestamp".into()),         Value::Integer(Integer::from(timestamp as u32))),
+        (Value::Text("timestamp".into()),         Value::Integer(Integer::try_from(timestamp).expect("timestamp out of CBOR integer range"))),
         (Value::Text("alice_root".into()),        Value::Bytes(alice_root.to_vec())),
         (Value::Text("field_name".into()),        Value::Text(field_name.into())),
         (Value::Text("predicate_id".into()),      Value::Text(predicate_id.into())),
@@ -592,9 +614,8 @@ fn compute_proof_request_digest(name: &str) -> ProofRequestDigestVector {
         predicate_inputs,
     );
 
-    // Digest = poseidon2_hash over 31-byte-packed CBOR chunks (§9.2.2)
-    let fes: Vec<FieldElement> = cbor_bytes.chunks(CHUNK_BYTES).map(pack_chunk_to_fe).collect();
-    let digest = poseidon2_hash(&fes);
+    // Digest = poseidon2_hash(bytes_to_fes(cbor_bytes)) per §9.2.2 and §4.3.
+    let digest = poseidon2_hash(&bytes_to_field_elements(&cbor_bytes));
 
     ProofRequestDigestVector {
         name: name.to_string(),
