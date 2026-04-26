@@ -7,6 +7,12 @@ const MAX_VALUE_BYTES: usize = 256;
 const CHUNK_BYTES: usize = 31;
 const VALUE_CHUNKS: usize = (MAX_VALUE_BYTES + CHUNK_BYTES - 1) / CHUNK_BYTES;
 
+// Fixed salt used ONLY for generating reproducible spec test vectors.
+// In production, each leaf MUST use a unique, cryptographically random salt that is
+// generated at issuance time and stored securely alongside the credential.
+// Reusing or leaking the salt destroys the hiding property of the leaf commitment.
+const TEST_SALT: &str = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+
 #[derive(Serialize)]
 struct TestVectors {
     version: String,
@@ -21,6 +27,7 @@ struct Vectors {
     empty_subtree_constants: EmptySubtreeConstants,
     field_name_encoding: Vec<FieldNameEncodingVector>,
     value_encoding: Vec<ValueEncodingVector>,
+    leaf_hash: Vec<LeafHashVector>,
 }
 
 #[derive(Serialize)]
@@ -58,6 +65,27 @@ struct ValueEncodingOutputs {
     byte_length: usize,
     chunks: Vec<HexField>,
     value_commitment: HexField,
+}
+
+#[derive(Serialize)]
+struct LeafHashVector {
+    name: String,
+    inputs: LeafHashInputs,
+    outputs: LeafHashOutputs,
+}
+
+#[derive(Serialize)]
+struct LeafHashInputs {
+    field_name: String,
+    value: String,
+    salt: String,
+}
+
+#[derive(Serialize)]
+struct LeafHashOutputs {
+    field_name_fe: HexField,
+    value_commitment: HexField,
+    leaf: HexField,
 }
 
 #[derive(Serialize)]
@@ -148,6 +176,10 @@ fn domain_hash(label: &str) -> HexField {
     HexField(field_to_be_bytes(domain_label_fe(label)))
 }
 
+fn domain_leaf_constant() -> FieldElement {
+    domain_label_fe("dexio.v1.leaf")
+}
+
 fn domain_node_constant() -> FieldElement {
     domain_label_fe("dexio.v1.node")
 }
@@ -204,6 +236,37 @@ fn compute_field_name_encoding(name: &str, field_name: &str) -> FieldNameEncodin
         inputs: FieldNameEncodingInputs { field_name: field_name.to_string() },
         outputs: FieldNameEncodingOutputs {
             field_name_fe: HexField(field_to_be_bytes(field_name_to_fe(field_name))),
+        },
+    }
+}
+
+fn compute_leaf_hash(name: &str, field_name: &str, value: &str, salt_hex: &str) -> LeafHashVector {
+    // Decode salt from hex string into a field element.
+    let salt_bytes = hex::decode(salt_hex.trim_start_matches("0x")).expect("invalid salt hex");
+    let salt = pack_chunk_to_fe(&salt_bytes);
+
+    let field_name_fe = field_name_to_fe(field_name);
+    let ffe = &field_name_fe;
+    let value_commitment = {
+        let canonical = canonicalize_value(value);
+        assert!(canonical.len() <= MAX_VALUE_BYTES);
+        let chunks = pack_big_endian(&pad_to_max(&canonical));
+        compute_value_commitment(canonical.len(), &chunks)
+    };
+    let vfe = &value_commitment;
+    let leaf = poseidon2_hash(&[domain_leaf_constant(), *ffe, *vfe, salt]);
+
+    LeafHashVector {
+        name: name.to_string(),
+        inputs: LeafHashInputs {
+            field_name: field_name.to_string(),
+            value: value.to_string(),
+            salt: salt_hex.to_string(),
+        },
+        outputs: LeafHashOutputs {
+            field_name_fe: HexField(field_to_be_bytes(field_name_fe)),
+            value_commitment: HexField(field_to_be_bytes(value_commitment)),
+            leaf: HexField(field_to_be_bytes(leaf)),
         },
     }
 }
@@ -278,6 +341,11 @@ fn main() {
             field_name_encoding: vec![
                 compute_field_name_encoding("short", "email"),
                 compute_field_name_encoding("boundary_31", "a_31_byte_field_name_exactly_xx"),
+            ],
+            leaf_hash: vec![
+                compute_leaf_hash("simple",       "email",       "alice@example.com", TEST_SALT),
+                compute_leaf_hash("unicode_value", "name",        "cafe\u{0301}",      TEST_SALT),
+                compute_leaf_hash("empty_value",  "middle_name", "",                  TEST_SALT),
             ],
             value_encoding: vec![
                 compute_value_encoding("short_ascii", "hello"),
