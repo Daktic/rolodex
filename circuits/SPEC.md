@@ -220,8 +220,8 @@ A verifier who wishes to receive a proof from a prover issues a proof request:
 ```
 ProofRequest {
   version:           string         // "dexio.v1"
-  alice_root:        Field          // the sender's Merkle root (§8)
-  alice_address:     bytes20        // the sender's EVM address
+  sender_root:        Field         // the sender's Merkle root (§8)
+  sender_address:     bytes20       // the sender's EVM address
   field_name:        string         // canonicalized per §4.1
   verifier_address:  bytes20        // the verifier's EVM address
   nonce:             bytes32        // CSPRNG-generated per §7.2 (32 bytes)
@@ -256,8 +256,8 @@ request_digest  = poseidon(bytes_to_fes(cbor_bytes))      // per §4.3
 Every proof-generating circuit under this specification MUST enforce:
 
 1. The leaf reconstruction: `leaf = poseidon([DOMAIN_LEAF, field_name_fe, value_commitment, salt])` where `field_name_fe` is derived from `request.field_name` per §6.1.
-2. Merkle inclusion: the witnessed `(siblings, directions)` demonstrates `leaf` is in the tree rooted at `request.alice_root`.
-3. Sender authentication: `request.alice_address` matches the address recoverable from a signature witness over `request.alice_root`, using the scheme in §10.3.
+2. Merkle inclusion: the witnessed `(siblings, directions)` demonstrates `leaf` is in the tree rooted at `request.sender_root`.
+3. Sender authentication: `request.sender_address` matches the address recoverable from a signature witness over `request.sender_root`, using the scheme in §10.3.
 4. The predicate identified by `request.predicate_id`, parameterized by `request.predicate_inputs`, holds over the witnessed value.
 5. All fields of `request` are bound as public inputs (either directly or via digest, per §9.2.2).
 
