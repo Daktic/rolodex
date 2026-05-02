@@ -274,6 +274,22 @@ fn field_to_be_bytes(f: FieldElement) -> [u8; 32] {
     f.to_be_bytes().try_into().expect("field element must be 32 bytes")
 }
 
+// Shared sample fixture root used by signed payload and proof request vectors.
+fn sample_three_field_root_bytes() -> [u8; 32] {
+    let sorted = [
+        ("company", "Acme Corp",         TEST_SALT),
+        ("email",   "alice@example.com", TEST_SALT),
+        ("name",    "Alice",             TEST_SALT),
+    ];
+    let real_hashes: Vec<FieldElement> = sorted.iter()
+        .map(|&(f, v, s)| compute_leaf_fe(f, v, s))
+        .collect();
+    let mut leaves = vec![zero_leaf_constant(); TREE_WIDTH];
+    for (i, hash) in real_hashes.iter().enumerate() { leaves[i] = *hash; }
+    let levels = build_levels(&leaves);
+    field_to_be_bytes(levels[TREE_DEPTH][0])
+}
+
 // Right-align `chunk` (≤32 bytes) in a 32-byte buffer and interpret as a big-endian integer.
 // Used only for raw field-element values (e.g., salts) that are already canonically sized.
 // For structured byte strings (labels, field names, CBOR), use bytes_to_field_elements instead.
@@ -578,20 +594,7 @@ fn canonical_cbor_proof_request(
 
 fn compute_proof_request_digest(name: &str) -> ProofRequestDigestVector {
     // Reuse the same root and sender_address as the signed payload for end-to-end coherence.
-    let root_bytes = {
-        let sorted = [
-            ("company", "Acme Corp",         TEST_SALT),
-            ("email",   "alice@example.com", TEST_SALT),
-            ("name",    "Alice",             TEST_SALT),
-        ];
-        let real_hashes: Vec<FieldElement> = sorted.iter()
-            .map(|&(f, v, s)| compute_leaf_fe(f, v, s))
-            .collect();
-        let mut leaves = vec![zero_leaf_constant(); TREE_WIDTH];
-        for (i, hash) in real_hashes.iter().enumerate() { leaves[i] = *hash; }
-        let levels = build_levels(&leaves);
-        field_to_be_bytes(levels[TREE_DEPTH][0])
-    };
+    let root_bytes = sample_three_field_root_bytes();
 
     let pk_bytes: [u8; 32] = hex::decode(TEST_PRIVATE_KEY.trim_start_matches("0x"))
         .unwrap().try_into().unwrap();
@@ -665,20 +668,7 @@ fn eth_address_from_signing_key(signing_key: &k256::ecdsa::SigningKey) -> [u8; 2
 
 fn compute_signed_payload(name: &str) -> SignedPayloadVector {
     // Use the three_fields Merkle root as an end-to-end realistic root value.
-    let root_bytes = {
-        let sorted = [
-            ("company", "Acme Corp",         TEST_SALT),
-            ("email",   "alice@example.com", TEST_SALT),
-            ("name",    "Alice",             TEST_SALT),
-        ];
-        let real_hashes: Vec<FieldElement> = sorted.iter()
-            .map(|&(f, v, s)| compute_leaf_fe(f, v, s))
-            .collect();
-        let mut leaves = vec![zero_leaf_constant(); TREE_WIDTH];
-        for (i, hash) in real_hashes.iter().enumerate() { leaves[i] = *hash; }
-        let levels = build_levels(&leaves);
-        field_to_be_bytes(levels[TREE_DEPTH][0])
-    };
+    let root_bytes = sample_three_field_root_bytes();
 
     let pk_bytes: [u8; 32] = hex::decode(TEST_PRIVATE_KEY.trim_start_matches("0x"))
         .unwrap().try_into().unwrap();
