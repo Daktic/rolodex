@@ -11,7 +11,7 @@ const TREE_DEPTH: usize = 8;
 const TREE_WIDTH: usize = 1 << TREE_DEPTH; // 256 leaves
 
 // TEST-ONLY: Fixed private key for reproducible spec test vectors.
-// NEVER use this key for any real purpose. Real implementations must generate a fresh
+// NEVER use this key for any real purpose. Real implementations must generate fresh
 const TEST_PRIVATE_KEY: &str =
     "0x0101010101010101010101010101010101010101010101010101010101010101";
 
@@ -19,8 +19,6 @@ const TEST_PRIVATE_KEY: &str =
 // In production, each leaf MUST use a unique, cryptographically random salt that is
 // generated at issuance time and stored securely alongside the credential.
 // Reusing or leaking the salt destroys the hiding property of the leaf commitment.
-// High byte is 0x00, guaranteeing the value is < p without reduction.
-// The hex form and the field element form are identical.
 const TEST_SALT: &str = "0x001234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd";
 
 // TEST-ONLY: Fixed nonce for reproducible spec test vectors.
@@ -195,8 +193,8 @@ struct ProofRequestDigestVector {
 #[derive(Serialize)]
 struct ProofRequestData {
     version: String,
-    alice_root: HexField,
-    alice_address: String,
+    sender_root: HexField,
+    sender_address: String,
     field_name: String,
     verifier_address: String,
     nonce: HexBytes,
@@ -548,12 +546,12 @@ fn compute_value_encoding(name: &str, raw: &str) -> ValueEncodingVector {
 
 // Encode ProofRequest as canonical CBOR (RFC 8949 §4.2).
 // Key sort order (bytewise-encoded-key):
-//   nonce(5) < version(7) < timestamp(9) < alice_root(10) = field_name(10 → 'a'<'f')
-//   < predicate_id(12) < alice_address(13) < predicate_inputs(16,'p') < verifier_address(16,'v')
+//   nonce(5) < version(7) < timestamp(9) < sender_root(10) = field_name(10 → 'a'<'f')
+//   < predicate_id(12) < sender_address(13) < predicate_inputs(16,'p') < verifier_address(16,'v')
 fn canonical_cbor_proof_request(
     version: &str,
-    alice_root: &[u8; 32],
-    alice_address: &[u8; 20],
+    sender_root: &[u8; 32],
+    sender_address: &[u8; 20],
     field_name: &str,
     verifier_address: &[u8; 20],
     nonce: &[u8; 32],
@@ -566,10 +564,10 @@ fn canonical_cbor_proof_request(
         (Value::Text("nonce".into()),             Value::Bytes(nonce.to_vec())),
         (Value::Text("version".into()),           Value::Text(version.into())),
         (Value::Text("timestamp".into()),         Value::Integer(Integer::try_from(timestamp).expect("timestamp out of CBOR integer range"))),
-        (Value::Text("alice_root".into()),        Value::Bytes(alice_root.to_vec())),
         (Value::Text("field_name".into()),        Value::Text(field_name.into())),
+        (Value::Text("sender_root".into()),        Value::Bytes(sender_root.to_vec())),
         (Value::Text("predicate_id".into()),      Value::Text(predicate_id.into())),
-        (Value::Text("alice_address".into()),     Value::Bytes(alice_address.to_vec())),
+        (Value::Text("sender_address".into()),     Value::Bytes(sender_address.to_vec())),
         (Value::Text("predicate_inputs".into()),  Value::Bytes(predicate_inputs.to_vec())),
         (Value::Text("verifier_address".into()),  Value::Bytes(verifier_address.to_vec())),
     ]);
@@ -579,7 +577,7 @@ fn canonical_cbor_proof_request(
 }
 
 fn compute_proof_request_digest(name: &str) -> ProofRequestDigestVector {
-    // Reuse the same root and alice_address as the signed payload for end-to-end coherence.
+    // Reuse the same root and sender_address as the signed payload for end-to-end coherence.
     let root_bytes = {
         let sorted = [
             ("company", "Acme Corp",         TEST_SALT),
@@ -598,14 +596,14 @@ fn compute_proof_request_digest(name: &str) -> ProofRequestDigestVector {
     let pk_bytes: [u8; 32] = hex::decode(TEST_PRIVATE_KEY.trim_start_matches("0x"))
         .unwrap().try_into().unwrap();
     let signing_key = k256::ecdsa::SigningKey::from_slice(&pk_bytes).unwrap();
-    let alice_address = eth_address_from_signing_key(&signing_key);
+    let sender_address = eth_address_from_signing_key(&signing_key);
 
     let predicate_inputs = b"example.com"; // domain equality target for "domain_eq.v1"
 
     let cbor_bytes = canonical_cbor_proof_request(
         "dexio.v1",
         &root_bytes,
-        &alice_address,
+        &sender_address,
         "email",
         &TEST_VERIFIER_ADDRESS,
         &TEST_NONCE,
@@ -621,8 +619,8 @@ fn compute_proof_request_digest(name: &str) -> ProofRequestDigestVector {
         name: name.to_string(),
         inputs: ProofRequestData {
             version: "dexio.v1".to_string(),
-            alice_root: HexField(root_bytes),
-            alice_address: format!("0x{}", hex::encode(alice_address)),
+            sender_root: HexField(root_bytes),
+            sender_address: format!("0x{}", hex::encode(sender_address)),
             field_name: "email".to_string(),
             verifier_address: format!("0x{}", hex::encode(TEST_VERIFIER_ADDRESS)),
             nonce: HexBytes(TEST_NONCE.to_vec()),
