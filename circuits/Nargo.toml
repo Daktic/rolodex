@@ -1,0 +1,6 @@
+[package]
+name = "dexio"
+type = "bin"
+authors = [""]
+
+[dependencies]
