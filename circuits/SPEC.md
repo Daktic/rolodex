@@ -20,14 +20,16 @@ Dexio commits to contact field values at exchange time so that either party may 
 
 ## 3. Domain separation
 
-All hashes MUST include a domain constant as their first input. Domain constants are derived from versioned UTF-8 strings:
+All hashes MUST include a domain constant as their first input. Domain constants are derived from versioned UTF-8 strings using the canonical packing rule (§4.3):
 
 ```
-DOMAIN_LEAF   = poseidon_hash(utf8("dexio.v1.leaf"))
-DOMAIN_NODE   = poseidon_hash(utf8("dexio.v1.node"))
-DOMAIN_VALUE  = poseidon_hash(utf8("dexio.v1.value"))
-ZERO_LEAF     = poseidon_hash(utf8("dexio.v1.zero_leaf"))
+DOMAIN_LEAF   = poseidon(bytes_to_fes(utf8("dexio.v1.leaf")))     // per §4.3
+DOMAIN_NODE   = poseidon(bytes_to_fes(utf8("dexio.v1.node")))
+DOMAIN_VALUE  = poseidon(bytes_to_fes(utf8("dexio.v1.value")))
+ZERO_LEAF     = poseidon(bytes_to_fes(utf8("dexio.v1.zero_leaf")))
 ```
+
+Each label is ≤31 bytes, so `bytes_to_fes` produces exactly one field element and `poseidon` hashes a single-element input.
 
 The version substring (`dexio.v1`) is load-bearing. A future `dexio.v2` specification produces distinct domain constants and therefore cryptographically separate commitment spaces.
 
@@ -56,6 +58,19 @@ Field values are arbitrary Unicode strings, canonicalized as:
 
 Application-layer value canonicalization (e.g., E.164 phone formatting, email lowercasing) is OUT OF SCOPE and occurs before protocol encoding.
 
+### 4.3 Byte-to-field-element packing
+
+All conversions of byte strings to field elements in this specification use a single canonical rule, referred to elsewhere as `bytes_to_fes(bytes)`:
+
+1. Right-pad `bytes` with `0x00` to a length that is a multiple of `CHUNK_BYTES` (31).
+2. Split the padded bytes into contiguous `CHUNK_BYTES`-byte groups, in order.
+3. For each group, place the 31 bytes into the low-order 31 bytes of a 32-byte buffer (the high byte is `0x00`), then interpret the buffer as a big-endian unsigned integer to obtain a single field element.
+4. The result is the sequence of field elements produced from the chunks, in order.
+
+When a single field element is required from an input that fits in one chunk (such as a field name), this rule produces exactly one field element; the input is right-padded to `CHUNK_BYTES` bytes and the result is `bytes_to_fes(bytes)[0]`.
+
+> **Note:** `bytes_to_fes` is the only byte-to-FE rule in this specification. Implementations MUST NOT use right-alignment of short inputs; doing so would produce different field elements than this rule for any input shorter than 31 bytes.
+
 ## 5. Value encoding
 
 ### 5.1 Constants
@@ -72,9 +87,8 @@ Given a canonicalized UTF-8 byte string `bytes` of length `L`:
 
 1. REJECT if `L > MAX_VALUE_BYTES`.
 2. Right-pad `bytes` with `0x00` to exactly `MAX_VALUE_BYTES` length, producing `padded`.
-3. Split `padded` into `VALUE_CHUNKS` contiguous groups of `CHUNK_BYTES` bytes.
-4. Interpret each group as a big-endian unsigned integer to produce `chunks: [Field; VALUE_CHUNKS]`.
-5. Compute:
+3. Compute `chunks = bytes_to_fes(padded)` per §4.3. Result has length `VALUE_CHUNKS` (9).
+4. Compute:
 
 ```
 value_commitment = poseidon([DOMAIN_VALUE, L, chunks[0], ..., chunks[8]])
@@ -87,12 +101,12 @@ The actual byte length `L` is committed alongside the padded chunks to prevent p
 ### 6.1 Leaf hash
 
 ```
-field_name_fe = pack_big_endian(utf8(field_name), CHUNK_BYTES)[0]
+field_name_fe = bytes_to_fes(utf8(field_name))[0]    // per §4.3
 
 leaf = poseidon([DOMAIN_LEAF, field_name_fe, value_commitment, salt])
 ```
 
-Field name fits in one Field element per §4.1.
+Field name fits in one Field element per §4.1; `bytes_to_fes` produces exactly one chunk.
 
 ### 6.2 Unused slots
 
@@ -206,8 +220,8 @@ A verifier who wishes to receive a proof from a prover issues a proof request:
 ```
 ProofRequest {
   version:           string         // "dexio.v1"
-  alice_root:        Field          // the sender's Merkle root (§8)
-  alice_address:     bytes20        // the sender's EVM address
+  sender_root:        Field         // the sender's Merkle root (§8)
+  sender_address:     bytes20       // the sender's EVM address
   field_name:        string         // canonicalized per §4.1
   verifier_address:  bytes20        // the verifier's EVM address
   nonce:             bytes32        // CSPRNG-generated per §7.2 (32 bytes)
@@ -226,15 +240,24 @@ Proof {
 }
 ```
 
-The proof's public inputs MUST include every field of `ProofRequest` in canonical order. Implementations hash the ProofRequest into a single Field-element digest (`poseidon` over the CBOR-canonical encoding) and pass that digest as a public input to the circuit, which internally reproduces the hash from the individual fields. Either approach is conformant, provided the circuit enforces equality between the claimed public inputs and the verifier-supplied `ProofRequest`.
+The proof's public inputs MUST include every field of `ProofRequest` in canonical order. Implementations hash the ProofRequest into a single Field-element digest and pass that digest as a public input to the circuit, which internally reproduces the hash from the individual fields. Either approach is conformant, provided the circuit enforces equality between the claimed public inputs and the verifier-supplied `ProofRequest`.
+
+The ProofRequest digest is computed as:
+
+```
+cbor_bytes      = canonical_cbor(ProofRequest)            // per §10.4
+request_digest  = poseidon(bytes_to_fes(cbor_bytes))      // per §4.3
+```
+
+`request_digest` is a single field element, suitable for use as a circuit public input.
 
 #### 9.2.3 Circuit obligations
 
 Every proof-generating circuit under this specification MUST enforce:
 
 1. The leaf reconstruction: `leaf = poseidon([DOMAIN_LEAF, field_name_fe, value_commitment, salt])` where `field_name_fe` is derived from `request.field_name` per §6.1.
-2. Merkle inclusion: the witnessed `(siblings, directions)` demonstrates `leaf` is in the tree rooted at `request.alice_root`.
-3. Sender authentication: `request.alice_address` matches the address recoverable from a signature witness over `request.alice_root`, using the scheme in §10.3.
+2. Merkle inclusion: the witnessed `(siblings, directions)` demonstrates `leaf` is in the tree rooted at `request.sender_root`.
+3. Sender authentication: `request.sender_address` matches the address recoverable from a signature witness over `request.sender_root`, using the scheme in §10.3.
 4. The predicate identified by `request.predicate_id`, parameterized by `request.predicate_inputs`, holds over the witnessed value.
 5. All fields of `request` are bound as public inputs (either directly or via digest, per §9.2.2).
 
