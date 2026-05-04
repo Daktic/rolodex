@@ -12,11 +12,59 @@ pub global MAX_VALUE_BYTES: u32 = 256;
 pub global CHUNK_BYTES: u32 = 31;
 pub global VALUE_CHUNKS: u32 = 9;
 
+use poseidon::poseidon2_permutation;
+
+// Dexio uses the same Poseidon2 permutation as the package dependency, but not
+// the package's higher-level Poseidon2::hash helper.
+//
+// The package helper injects a length-derived IV into the sponge state.
+// Our published Rust test vectors were generated with a zero-initialized
+// sponge instead:
+//
+// - state width = 4
+// - rate = 3
+// - absorb full chunks into state[0..2], then permute
+// - absorb any remaining 1 or 2 inputs into state[0..1], then permute once
+// - if the input is empty, still permute once
+// - return state[0]
+//
+// This helper mirrors that Rust construction exactly so Noir-side hashing
+// matches the published Dexio vectors.
+pub fn dexio_poseidon2_hash<let N: u32>(inputs: [Field; N], input_len: u32) -> Field {
+    let mut state = [0 as Field; 4];
+
+    // Absorb every full 3-field chunk and permute immediately afterward.
+    let full_chunks = input_len / 3;
+    for chunk_index in 0..full_chunks {
+        let start = chunk_index * 3;
+        state[0] += inputs[start];
+        state[1] += inputs[start + 1];
+        state[2] += inputs[start + 2];
+        state = poseidon2_permutation(state);
+    }
+
+    // Handle the final partial chunk, if present.
+    let remainder = input_len % 3;
+    if remainder != 0 {
+        let start = full_chunks * 3;
+        state[0] += inputs[start];
+        if remainder > 1 {
+            state[1] += inputs[start + 1];
+        }
+        state = poseidon2_permutation(state);
+    }
+
+    // The empty-input case still performs one permutation.
+    if input_len == 0 {
+        state = poseidon2_permutation(state);
+    }
+
+    state[0]
+}
+
 // Domain separation constants pinned from the published test vectors.
 //
 // The spec requires these to be pinned as concrete Field values in code.
-// Later, once Poseidon is working cleanly in Noir for this toolchain, we can
-// add verification tests that recompute them from the versioned labels.
 pub global DOMAIN_LEAF: Field =
     0x153b8a3467843421644905cfe5e191b78a92e8c8f1b0d4d7a15f45385fac7b5b;
 pub global DOMAIN_NODE: Field =
@@ -99,6 +147,28 @@ pub fn pack_padded_value(bytes: [u8; 256]) -> [Field; 9] {
     }
 
     chunks
+}
+
+
+pub fn compute_value_commitment(byte_length: u32, chunks: [Field; 9]) -> Field {
+    assert(is_valid_value_length(byte_length));
+
+    let inputs = [
+                         DOMAIN_VALUE,
+                         byte_length as Field,
+                         chunks[0],
+                         chunks[1],
+                         chunks[2],
+                         chunks[3],
+                         chunks[4],
+                         chunks[5],
+                         chunks[6],
+                         chunks[7],
+                         chunks[8],
+                     ];
+
+
+    dexio_poseidon2_hash(inputs, 11) // inputs has 11 fields
 }
 
 #[test]
@@ -256,4 +326,87 @@ fn test_pack_padded_value_hello_first_chunk_vector() {
     assert(chunks[6] == 0);
     assert(chunks[7] == 0);
     assert(chunks[8] == 0);
+}
+
+
+#[test]
+fn test_compute_value_commitment_empty_vector() {
+    // Empty value canonicalizes to zero bytes, then pads to MAX_VALUE_BYTES.
+    // That means all packed chunks are zero.
+    let bytes = [0; 256];
+    let chunks = pack_padded_value(bytes);
+
+    let commitment = compute_value_commitment(0, chunks);
+
+    assert(
+        commitment
+            == 0x07e0998d23adac9727874309e9a7f9e71990533f9f17d032e0c9c46ce9c5a7bb
+    );
+}
+
+#[test]
+fn test_compute_value_commitment_single_byte() {
+    let mut bytes = [0; 256];
+    bytes[0] = 0x61;
+
+    let chunks = pack_padded_value(bytes);
+    let commitment = compute_value_commitment(1, chunks);
+
+    assert(
+        commitment
+            == 0x18a445aca032c1c96246b8c13046920955487eff1a830cbda10bd9d59f68b79f
+    );
+}
+
+#[test]
+fn test_compute_value_commitment_short_ascii_value() {
+    let mut bytes = [0; 256];
+    bytes[0] = 0x68;
+    bytes[1] = 0x65;
+    bytes[2] = 0x6c;
+    bytes[3] = 0x6c;
+    bytes[4] = 0x6f;
+
+    let chunks = pack_padded_value(bytes);
+    let commitment = compute_value_commitment(5, chunks);
+
+    assert(
+        commitment
+            == 0x145806a7910391eca546880e08095444acf659c687ee3b6662869c74d96dec88
+    );
+}
+
+#[test]
+fn test_compute_value_commitment_unicode_normalized_value() {
+    // These bytes are already NFC-normalized UTF-8 for "cafe" (with tilde).
+    let mut bytes = [0; 256];
+    bytes[0] = 0x63;
+    bytes[1] = 0x61;
+    bytes[2] = 0x66;
+    bytes[3] = 0xc3;
+    bytes[4] = 0xa9;
+
+    let chunks = pack_padded_value(bytes);
+    let commitment = compute_value_commitment(5, chunks);
+
+    assert(
+        commitment
+            == 0x09b265ade3da7580e0fcef4e274dec01fe0d374a45de87cb1990736bc7a8e29b
+    );
+}
+
+#[test]
+fn test_compute_value_commitment_max_len_ascii() {
+    let mut bytes = [0; 256];
+    for i in 0..256 {
+        bytes[i] = 0x61;
+    }
+
+    let chunks = pack_padded_value(bytes);
+    let commitment = compute_value_commitment(256, chunks);
+
+    assert(
+        commitment
+            == 0x1ae902e597d00dbe0f6aea5d49e9dcf8c11f1cbf09cb913666271eafdd31d3da
+    );
 }
