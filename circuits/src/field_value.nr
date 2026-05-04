@@ -154,21 +154,39 @@ pub fn compute_value_commitment(byte_length: u32, chunks: [Field; 9]) -> Field {
     assert(is_valid_value_length(byte_length));
 
     let inputs = [
-                         DOMAIN_VALUE,
-                         byte_length as Field,
-                         chunks[0],
-                         chunks[1],
-                         chunks[2],
-                         chunks[3],
-                         chunks[4],
-                         chunks[5],
-                         chunks[6],
-                         chunks[7],
-                         chunks[8],
-                     ];
+        DOMAIN_VALUE,
+        byte_length as Field,
+        chunks[0],
+        chunks[1],
+        chunks[2],
+        chunks[3],
+        chunks[4],
+        chunks[5],
+        chunks[6],
+        chunks[7],
+        chunks[8],
+    ];
 
+    // 11 fields total: domain tag, byte length, and 9 packed chunks.
+    dexio_poseidon2_hash(inputs, 11)
+}
 
-    dexio_poseidon2_hash(inputs, 11) // inputs has 11 fields
+// Recompute a Dexio leaf commitment from its already-encoded components.
+//
+// This helper matches SPEC.md 6.1 exactly:
+// leaf = poseidon([DOMAIN_LEAF, field_name_fe, value_commitment, salt])
+//
+// At this layer we are intentionally operating on already-encoded field values.
+// Field-name canonicalization and value canonicalization happen before this.
+pub fn compute_leaf(field_name_fe: Field, value_commitment: Field, salt: Field) -> Field {
+    let inputs = [
+        DOMAIN_LEAF,
+        field_name_fe,
+        value_commitment,
+        salt,
+    ];
+
+    dexio_poseidon2_hash(inputs, 4)
 }
 
 #[test]
@@ -346,6 +364,7 @@ fn test_compute_value_commitment_empty_vector() {
 
 #[test]
 fn test_compute_value_commitment_single_byte() {
+    // The string "a"
     let mut bytes = [0; 256];
     bytes[0] = 0x61;
 
@@ -360,6 +379,7 @@ fn test_compute_value_commitment_single_byte() {
 
 #[test]
 fn test_compute_value_commitment_short_ascii_value() {
+    // The string "hello"
     let mut bytes = [0; 256];
     bytes[0] = 0x68;
     bytes[1] = 0x65;
@@ -378,7 +398,7 @@ fn test_compute_value_commitment_short_ascii_value() {
 
 #[test]
 fn test_compute_value_commitment_unicode_normalized_value() {
-    // These bytes are already NFC-normalized UTF-8 for "cafe" (with tilde).
+    // NFC UTF-8 bytes for "cafe" (with tilde): 63 61 66 c3 a9
     let mut bytes = [0; 256];
     bytes[0] = 0x63;
     bytes[1] = 0x61;
@@ -397,6 +417,7 @@ fn test_compute_value_commitment_unicode_normalized_value() {
 
 #[test]
 fn test_compute_value_commitment_max_len_ascii() {
+    // 256 ASCII 'a' bytes
     let mut bytes = [0; 256];
     for i in 0..256 {
         bytes[i] = 0x61;
@@ -408,5 +429,39 @@ fn test_compute_value_commitment_max_len_ascii() {
     assert(
         commitment
             == 0x1ae902e597d00dbe0f6aea5d49e9dcf8c11f1cbf09cb913666271eafdd31d3da
+    );
+}
+
+#[test]
+fn test_compute_leaf_simple_vector() {
+    let field_name_fe =
+        0x00656d61696c0000000000000000000000000000000000000000000000000000;
+    let value_commitment =
+        0x16ea9b334f2946052dc38c99c07b884a9eaa7178b646159b83e4b1afe1848e67;
+    let salt =
+        0x001234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd;
+
+    let leaf = compute_leaf(field_name_fe, value_commitment, salt);
+
+    assert(
+        leaf
+            == 0x10e7d3eb95070da75c64fd894176e479e18f665eddbbaafda0490ce17fca023e
+    );
+}
+
+#[test]
+fn test_compute_leaf_empty_value_vector() {
+    let field_name_fe =
+        0x006d6964646c655f6e616d650000000000000000000000000000000000000000;
+    let value_commitment =
+        0x07e0998d23adac9727874309e9a7f9e71990533f9f17d032e0c9c46ce9c5a7bb;
+    let salt =
+        0x001234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd;
+
+    let leaf = compute_leaf(field_name_fe, value_commitment, salt);
+
+    assert(
+        leaf
+            == 0x1fee4a2d357d8ebc84c7b0798912d6f330b16e81458dc0d3351c5a5258caf0c3
     );
 }
